@@ -22,8 +22,7 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 # Change to backend directory
 WORKDIR /app/backend
 
-# Run migrations and collect static files
-RUN python manage.py migrate --noinput
+# Collect static files only (migrations will run at startup)
 RUN python manage.py collectstatic --noinput
 
 # Create a startup script

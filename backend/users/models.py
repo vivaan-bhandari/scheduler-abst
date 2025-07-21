@@ -25,9 +25,5 @@ class FacilityAccess(models.Model):
     class Meta:
         unique_together = ('user', 'facility')
 
-# Optionally extend User with a profile for global role
-User.add_to_class('role', models.CharField(max_length=20, choices=[
-    ('superadmin', 'Super Admin'),
-    ('admin', 'Admin'),
-    ('user', 'User')
-], default='user'))
+# Note: We're not extending User with a role field anymore
+# Role information is stored in FacilityAccess model

@@ -51,12 +51,11 @@ class UserSerializer(serializers.ModelSerializer):
     """Serializer for user registration and profile"""
     password = serializers.CharField(write_only=True)
     email = serializers.EmailField(required=True)
-    role = serializers.CharField(read_only=True)
     is_staff = serializers.BooleanField(read_only=True)
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'password', 'first_name', 'last_name', 'role', 'is_staff']
+        fields = ['id', 'username', 'email', 'password', 'first_name', 'last_name', 'is_staff']
         extra_kwargs = {
             'password': {'write_only': True},
             'email': {'required': True}
