@@ -45,6 +45,10 @@ python manage.py migrate --noinput\n\
 echo "Collecting static files..."\n\
 python manage.py collectstatic --noinput\n\
 \n\
+# Add Brighton facilities\n\
+echo "Setting up facilities..."\n\
+python add_brighton_facilities.py\n\
+\n\
 # Create superuser if it doesn'\''t exist\n\
 echo "Checking for superuser..."\n\
 python manage.py shell -c "\n\
