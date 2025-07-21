@@ -23,6 +23,10 @@ python manage.py collectstatic --noinput
 echo "Setting up facilities..."
 python add_brighton_facilities.py
 
+# Seed ADL questions
+echo "Seeding ADL questions..."
+python adls/seed_adl_questions.py
+
 # Create superuser if it doesn't exist
 echo "Checking for superuser..."
 python manage.py shell -c "
