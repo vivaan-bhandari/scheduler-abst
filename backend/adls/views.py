@@ -423,6 +423,13 @@ class ADLViewSet(viewsets.ModelViewSet):
         if user.is_staff or getattr(user, 'role', None) in ['superadmin', 'admin']:
             adls = ADL.objects.filter(is_deleted=False)
         else:
+            # For anonymous users, return empty data
+            if user.is_anonymous:
+                return Response({
+                    'per_shift': [{'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
+                    'per_day': [{'day': day, 'hours': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
+                })
+            
             # Get approved facility IDs for this user
             approved_facility_ids = FacilityAccess.objects.filter(
                 user=user,
