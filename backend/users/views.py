@@ -23,6 +23,33 @@ class FacilityAccessViewSet(viewsets.ModelViewSet):
     serializer_class = FacilityAccessSerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def debug_access(self, request):
+        """Debug endpoint to check facility access without authentication"""
+        total_access = FacilityAccess.objects.count()
+        approved_access = FacilityAccess.objects.filter(status='approved').count()
+        
+        # Get all users and their access
+        users = User.objects.all()
+        user_access_summary = []
+        
+        for user in users:
+            access_records = FacilityAccess.objects.filter(user=user)
+            approved_records = access_records.filter(status='approved')
+            user_access_summary.append({
+                'username': user.username,
+                'is_staff': user.is_staff,
+                'total_access': access_records.count(),
+                'approved_access': approved_records.count(),
+                'facilities': list(approved_records.values_list('facility__name', flat=True))
+            })
+        
+        return Response({
+            'total_access_records': total_access,
+            'approved_access_records': approved_access,
+            'users': user_access_summary
+        })
+    
     def get_queryset(self):
         """Filter queryset based on user permissions"""
         user = self.request.user
