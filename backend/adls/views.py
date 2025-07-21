@@ -69,10 +69,12 @@ class ADLViewSet(viewsets.ModelViewSet):
             total_minutes = minutes * frequency
         total_hours = float(total_minutes) / 60 if total_minutes else 0
         
-        # Update the calculated fields
+        # Update the calculated fields and ensure per_day_shift_times is saved
         serializer.save(
             total_minutes=total_minutes,
             total_hours=total_hours,
+            per_day_shift_times=per_day_shift_times,
+            updated_by=self.request.user,
             updated_at=timezone.now()
         )
 
@@ -403,21 +405,46 @@ class ADLViewSet(viewsets.ModelViewSet):
         total_hours = float(total_minutes) / 60 if total_minutes else 0
         serializer.save(
             total_minutes=total_minutes,
-            total_hours=total_hours
+            total_hours=total_hours,
+            created_by=self.request.user,
+            updated_by=self.request.user
         )
 
     @action(detail=False, methods=['get'])
     def caregiving_summary(self, request):
         from residents.models import Resident, FacilitySection, Facility
         from .models import ADL
+        from users.models import FacilityAccess
+        
+        # Use the same filtering logic as get_queryset
+        user = request.user
+        
+        # Superadmins and admins see all ADLs
+        if user.is_staff or getattr(user, 'role', None) in ['superadmin', 'admin']:
+            adls = ADL.objects.filter(is_deleted=False)
+        else:
+            # Get approved facility IDs for this user
+            approved_facility_ids = FacilityAccess.objects.filter(
+                user=user,
+                status='approved'
+            ).values_list('facility_id', flat=True)
+
+            # Get all sections in those facilities
+            allowed_sections = FacilitySection.objects.filter(facility_id__in=approved_facility_ids)
+
+            # Get all residents in those sections
+            allowed_residents = Resident.objects.filter(facility_section__in=allowed_sections)
+
+            # Only ADLs for allowed residents
+            adls = ADL.objects.filter(resident__in=allowed_residents, is_deleted=False)
+        
         # Optionally filter by facility_id
         facility_id = request.query_params.get('facility_id')
         if facility_id:
             sections = FacilitySection.objects.filter(facility_id=facility_id)
             residents = Resident.objects.filter(facility_section__in=sections)
-            adls = ADL.objects.filter(resident__in=residents)
-        else:
-            adls = ADL.objects.all()
+            adls = adls.filter(resident__in=residents)
+        
         shift_map = {
             'Shift1': 'Day',
             'Shift2': 'Eve',

@@ -148,7 +148,27 @@ class ResidentViewSet(viewsets.ModelViewSet):
     def caregiving_summary(self, request, pk=None):
         resident = self.get_object()
         from adls.models import ADL
-        adls = ADL.objects.filter(resident=resident)
+        from users.models import FacilityAccess
+        
+        # Check if user has access to this resident's facility
+        user = request.user
+        
+        # Superadmins and admins see all ADLs
+        if user.is_staff or getattr(user, 'role', None) in ['superadmin', 'admin']:
+            adls = ADL.objects.filter(resident=resident, is_deleted=False)
+        else:
+            # Get approved facility IDs for this user
+            approved_facility_ids = FacilityAccess.objects.filter(
+                user=user,
+                status='approved'
+            ).values_list('facility_id', flat=True)
+
+            # Check if user has access to this resident's facility
+            if resident.facility_section.facility.id not in approved_facility_ids:
+                return Response({'error': 'Access denied to this resident'}, status=403)
+
+            adls = ADL.objects.filter(resident=resident, is_deleted=False)
+        
         shift_map = {
             'Shift1': 'Day',
             'Shift2': 'Eve',
@@ -219,7 +239,28 @@ class FacilityViewSet(viewsets.ModelViewSet):
         facility = self.get_object()
         sections = facility.sections.all()
         residents = Resident.objects.filter(facility_section__in=sections)
-        adls = ADL.objects.filter(resident__in=residents)
+        
+        # Filter ADLs based on user permissions
+        user = request.user
+        from adls.models import ADL
+        from users.models import FacilityAccess
+        
+        # Superadmins and admins see all ADLs
+        if user.is_staff or getattr(user, 'role', None) in ['superadmin', 'admin']:
+            adls = ADL.objects.filter(resident__in=residents, is_deleted=False)
+        else:
+            # Get approved facility IDs for this user
+            approved_facility_ids = FacilityAccess.objects.filter(
+                user=user,
+                status='approved'
+            ).values_list('facility_id', flat=True)
+
+            # Only show data if user has access to this facility
+            if facility.id not in approved_facility_ids:
+                return Response({'error': 'Access denied to this facility'}, status=403)
+
+            adls = ADL.objects.filter(resident__in=residents, is_deleted=False)
+        
         shift_map = {
             'Shift1': 'Day',
             'Shift2': 'Eve',
@@ -257,7 +298,28 @@ class FacilitySectionViewSet(viewsets.ModelViewSet):
     def caregiving_summary(self, request, pk=None):
         section = self.get_object()
         residents = section.residents.all()
-        adls = ADL.objects.filter(resident__in=residents)
+        
+        # Check if user has access to this section's facility
+        user = request.user
+        from adls.models import ADL
+        from users.models import FacilityAccess
+        
+        # Superadmins and admins see all ADLs
+        if user.is_staff or getattr(user, 'role', None) in ['superadmin', 'admin']:
+            adls = ADL.objects.filter(resident__in=residents, is_deleted=False)
+        else:
+            # Get approved facility IDs for this user
+            approved_facility_ids = FacilityAccess.objects.filter(
+                user=user,
+                status='approved'
+            ).values_list('facility_id', flat=True)
+
+            # Check if user has access to this section's facility
+            if section.facility.id not in approved_facility_ids:
+                return Response({'error': 'Access denied to this section'}, status=403)
+
+            adls = ADL.objects.filter(resident__in=residents, is_deleted=False)
+        
         # Map shift columns to readable names
         shift_map = {
             'Shift1': 'Day',

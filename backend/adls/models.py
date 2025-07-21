@@ -25,6 +25,8 @@ class ADL(models.Model):
     per_day_shift_times = JSONField(default=dict, blank=True)
     
     # Audit fields
+    created_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_adls')
+    updated_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_adls')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
