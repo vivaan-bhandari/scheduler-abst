@@ -64,6 +64,34 @@ else:\n\
     print('\''Superuser already exists'\'')\n\
 "\n\
 \n\
+# Grant facility access to all users\n\
+echo "Granting facility access to users..."\n\
+python manage.py shell -c "\n\
+from django.contrib.auth.models import User\n\
+from users.models import FacilityAccess\n\
+from residents.models import Facility\n\
+\n\
+users = User.objects.all()\n\
+facilities = Facility.objects.all()\n\
+\n\
+for user in users:\n\
+    for facility in facilities:\n\
+        access, created = FacilityAccess.objects.get_or_create(\n\
+            user=user,\n\
+            facility=facility,\n\
+            defaults={\n\
+                '\''role'\'': '\''admin'\'' if user.is_staff else '\''staff'\'',\n\
+                '\''status'\'': '\''approved'\''\n\
+            }\n\
+        )\n\
+        if not created and access.status != '\''approved'\'':\n\
+            access.status = '\''approved'\''\n\
+            access.role = '\''admin'\'' if user.is_staff else '\''staff'\''\n\
+            access.save()\n\
+\n\
+print(f'\''Granted facility access to {users.count()} users for {facilities.count()} facilities'\'')\n\
+"\n\
+\n\
 # Start gunicorn\n\
 echo "Starting gunicorn..."\n\
 exec gunicorn abst.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile - --preload\n\
