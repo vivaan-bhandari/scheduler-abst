@@ -373,6 +373,23 @@ class ADLViewSet(viewsets.ModelViewSet):
         serializer = ADLQuestionSerializer(questions, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['post'], url_path='seed', permission_classes=[AllowAny])
+    def seed_questions(self, request):
+        """Manually seed ADL questions"""
+        from .seed_adl_questions import seed_adl_questions
+        try:
+            seed_adl_questions()
+            questions = ADLQuestion.objects.all().order_by('order', 'id')
+            serializer = ADLQuestionSerializer(questions, many=True)
+            return Response({
+                'message': f'Successfully seeded {questions.count()} ADL questions',
+                'questions': serializer.data
+            })
+        except Exception as e:
+            return Response({
+                'error': f'Failed to seed questions: {str(e)}'
+            }, status=500)
+
     def perform_create(self, serializer):
         data = serializer.validated_data
         minutes = data.get('minutes', 0)
