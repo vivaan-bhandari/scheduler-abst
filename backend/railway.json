@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "gunicorn abst.wsgi --log-file -",
+    "startCommand": "gunicorn abst.wsgi --bind 0.0.0.0:$PORT --log-file -",
     "healthcheckPath": "/api/",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
