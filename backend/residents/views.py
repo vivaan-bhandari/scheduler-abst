@@ -181,6 +181,7 @@ class ResidentViewSet(viewsets.ModelViewSet):
 class FacilityViewSet(viewsets.ModelViewSet):
     queryset = Facility.objects.all()
     serializer_class = FacilitySerializer
+    permission_classes = []  # Allow unauthenticated access for facility listing
 
     def get_queryset(self):
         user = self.request.user
