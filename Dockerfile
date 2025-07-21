@@ -23,8 +23,8 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 WORKDIR /app/backend
 
 # Run migrations and collect static files
-RUN python manage.py migrate --noinput || echo "Migrations failed, continuing..."
-RUN python manage.py collectstatic --noinput || echo "Static collection failed, continuing..."
+RUN python manage.py migrate --noinput
+RUN python manage.py collectstatic --noinput
 
 # Create a startup script
 RUN echo '#!/bin/bash\n\
@@ -34,10 +34,31 @@ echo "Database URL: $DATABASE_URL"\n\
 echo "Debug: $DEBUG"\n\
 echo "Allowed Hosts: $ALLOWED_HOSTS"\n\
 \n\
-# Wait a moment for database\n\
-sleep 2\n\
+# Wait for database to be ready\n\
+echo "Waiting for database..."\n\
+sleep 5\n\
+\n\
+# Run migrations\n\
+echo "Running migrations..."\n\
+python manage.py migrate --noinput\n\
+\n\
+# Collect static files\n\
+echo "Collecting static files..."\n\
+python manage.py collectstatic --noinput\n\
+\n\
+# Create superuser if it doesn'\''t exist\n\
+echo "Checking for superuser..."\n\
+python manage.py shell -c "\n\
+from django.contrib.auth.models import User\n\
+if not User.objects.filter(username='\''superadmin'\'').exists():\n\
+    User.objects.create_superuser('\''superadmin'\'', '\''superadmin@example.com'\'', '\''superpass123'\'')\n\
+    print('\''Superuser created'\'')\n\
+else:\n\
+    print('\''Superuser already exists'\'')\n\
+"\n\
 \n\
 # Start gunicorn\n\
+echo "Starting gunicorn..."\n\
 exec gunicorn abst.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile - --preload\n\
 ' > /app/backend/start.sh && chmod +x /app/backend/start.sh
 
