@@ -6,6 +6,6 @@
     "node": "18.x"
   },
   "scripts": {
-    "start": "./start.sh"
+    "start": "gunicorn abst.wsgi:application --bind 0.0.0.0:$PORT --workers 2"
   }
 } 
