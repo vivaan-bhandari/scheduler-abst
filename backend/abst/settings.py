@@ -80,12 +80,12 @@ REST_FRAMEWORK = {
     'MAX_PAGE_SIZE': 1000,
 }
 
-# CORS settings
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000,https://localhost:3000,https://abst-frontend.vercel.app,https://abst-frontend-git-main-vivaan-bhandari.vercel.app', cast=lambda v: [s.strip() for s in v.split(',')])
+# CORS settings - TEMPORARILY ALLOW ALL ORIGINS FOR DEBUGGING
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 CORS_ALLOW_HEADERS = ['accept', 'accept-encoding', 'authorization', 'content-type', 'dnt', 'origin', 'user-agent', 'x-csrftoken', 'x-requested-with']
+CORS_EXPOSE_HEADERS = ['content-type', 'content-disposition']
 
 # CSRF settings
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://abst-fullstack-production.up.railway.app,https://localhost:3000,http://localhost:3000,https://abst-frontend.vercel.app,https://abst-frontend-git-main-vivaan-bhandari.vercel.app', cast=lambda v: [s.strip() for s in v.split(',')])
