@@ -9,10 +9,6 @@ django.setup()
 from residents.models import Facility
 
 def add_brighton_facilities():
-    # Purge all existing facilities
-    Facility.objects.all().delete()
-    print("Deleted all existing facilities.")
-
     # Brighton Care Group facilities (names and unique facility_id)
     facilities = [
         {'name': 'Buena Vista', 'facility_id': 'B001'},
@@ -27,12 +23,20 @@ def add_brighton_facilities():
     
     created_count = 0
     for facility_data in facilities:
-        Facility.objects.create(**facility_data)
-        created_count += 1
-        print(f"Created facility: {facility_data['name']} ({facility_data['facility_id']})")
+        # Only create if facility doesn't exist
+        facility, created = Facility.objects.get_or_create(
+            facility_id=facility_data['facility_id'],
+            defaults={'name': facility_data['name']}
+        )
+        if created:
+            created_count += 1
+            print(f"Created facility: {facility_data['name']} ({facility_data['facility_id']})")
+        else:
+            print(f"Facility already exists: {facility_data['name']} ({facility_data['facility_id']})")
     
     print(f"\nFacility setup complete!")
-    print(f"Created: {created_count} facilities")
+    print(f"Created: {created_count} new facilities")
+    print(f"Total facilities: {Facility.objects.count()}")
 
 if __name__ == '__main__':
     add_brighton_facilities() 
