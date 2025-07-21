@@ -84,6 +84,9 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000,https://localhost:3000', cast=lambda v: [s.strip() for s in v.split(',')])
 CORS_ALLOW_CREDENTIALS = True
 
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://abst-fullstack-production.up.railway.app,https://localhost:3000,http://localhost:3000', cast=lambda v: [s.strip() for s in v.split(',')])
+
 ROOT_URLCONF = "abst.urls"
 
 TEMPLATES = [
