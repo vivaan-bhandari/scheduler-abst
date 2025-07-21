@@ -13,6 +13,7 @@ from django.db.models import Sum
 from adls.models import ADL
 import datetime
 from users.models import FacilityAccess
+from rest_framework.permissions import AllowAny
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,34 @@ class ResidentViewSet(viewsets.ModelViewSet):
 
         # Only residents in allowed sections
         return Resident.objects.filter(facility_section__in=allowed_sections)
+
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def debug_count(self, request):
+        """Debug endpoint to check resident count without authentication"""
+        total_residents = Resident.objects.count()
+        facility_id = request.query_params.get('facility_id')
+        
+        if facility_id:
+            sections = FacilitySection.objects.filter(facility_id=facility_id)
+            residents_in_facility = Resident.objects.filter(facility_section__in=sections).count()
+            return Response({
+                'total_residents': total_residents,
+                'facility_id': facility_id,
+                'residents_in_facility': residents_in_facility,
+                'sections_in_facility': sections.count(),
+                'section_details': [
+                    {
+                        'id': section.id,
+                        'name': section.name,
+                        'residents_count': section.residents.count()
+                    } for section in sections
+                ]
+            })
+        
+        return Response({
+            'total_residents': total_residents,
+            'message': 'Add ?facility_id=73 to see facility-specific data'
+        })
 
     @action(detail=False, methods=['get'])
     def export(self, request):
