@@ -178,10 +178,12 @@ class ResidentViewSet(viewsets.ModelViewSet):
             'per_day': per_day
         })
 
+from rest_framework.permissions import AllowAny
+
 class FacilityViewSet(viewsets.ModelViewSet):
     queryset = Facility.objects.all()
     serializer_class = FacilitySerializer
-    permission_classes = []  # Allow unauthenticated access for facility listing
+    permission_classes = [AllowAny]  # Allow unauthenticated access for facility listing
 
     def get_queryset(self):
         user = self.request.user
