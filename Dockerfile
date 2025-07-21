@@ -26,8 +26,23 @@ WORKDIR /app/backend
 RUN python manage.py migrate --noinput || echo "Migrations failed, continuing..."
 RUN python manage.py collectstatic --noinput || echo "Static collection failed, continuing..."
 
+# Create a startup script
+RUN echo '#!/bin/bash\n\
+echo "Starting Django application..."\n\
+echo "Port: $PORT"\n\
+echo "Database URL: $DATABASE_URL"\n\
+echo "Debug: $DEBUG"\n\
+echo "Allowed Hosts: $ALLOWED_HOSTS"\n\
+\n\
+# Wait a moment for database\n\
+sleep 2\n\
+\n\
+# Start gunicorn\n\
+exec gunicorn abst.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile - --preload\n\
+' > /app/backend/start.sh && chmod +x /app/backend/start.sh
+
 # Expose port
 EXPOSE $PORT
 
 # Start command with better error handling
-CMD gunicorn abst.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile - 
+CMD ["/app/backend/start.sh"] 
