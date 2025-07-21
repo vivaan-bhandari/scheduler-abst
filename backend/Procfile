@@ -1,1 +1,1 @@
-web: gunicorn abst.wsgi --bind 0.0.0.0:$PORT --log-file - 
+web: gunicorn abst.wsgi 
