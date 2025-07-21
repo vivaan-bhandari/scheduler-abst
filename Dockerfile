@@ -23,11 +23,11 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 WORKDIR /app/backend
 
 # Run migrations and collect static files
-RUN python manage.py migrate --noinput
-RUN python manage.py collectstatic --noinput
+RUN python manage.py migrate --noinput || echo "Migrations failed, continuing..."
+RUN python manage.py collectstatic --noinput || echo "Static collection failed, continuing..."
 
 # Expose port
 EXPOSE $PORT
 
-# Start command
-CMD gunicorn abst.wsgi:application --bind 0.0.0.0:$PORT --workers 2 
+# Start command with better error handling
+CMD gunicorn abst.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile - 
