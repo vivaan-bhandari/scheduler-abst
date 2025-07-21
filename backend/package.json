@@ -1,0 +1,11 @@
+{
+  "name": "abst-backend",
+  "version": "1.0.0",
+  "description": "Django backend for ABST application",
+  "engines": {
+    "node": "18.x"
+  },
+  "scripts": {
+    "start": "./start.sh"
+  }
+} 
