@@ -191,6 +191,10 @@ class FacilityViewSet(viewsets.ModelViewSet):
         if user.is_staff or getattr(user, 'role', None) in ['superadmin', 'admin']:
             return Facility.objects.all()
 
+        # For anonymous users, show all facilities (for access request)
+        if user.is_anonymous:
+            return Facility.objects.all()
+
         # Get approved facility IDs for this user
         approved_facility_ids = FacilityAccess.objects.filter(
             user=user,
