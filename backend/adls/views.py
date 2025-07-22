@@ -14,7 +14,7 @@ from residents.serializers import ResidentSerializer
 import pandas as pd
 import io
 
-# Create your views here.
+
 
 class ADLViewSet(viewsets.ModelViewSet):
     queryset = ADL.objects.filter(is_deleted=False)  # Only show non-deleted records by default

@@ -80,8 +80,8 @@ REST_FRAMEWORK = {
     'MAX_PAGE_SIZE': 1000,
 }
 
-# CORS settings - TEMPORARILY ALLOW ALL ORIGINS FOR DEBUGGING
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS settings
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='https://abst-frontend.vercel.app,https://abst-frontend-git-main-vivaan-bhandari.vercel.app,http://localhost:3000,https://localhost:3000', cast=lambda v: [s.strip() for s in v.split(',')])
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 CORS_ALLOW_HEADERS = ['accept', 'accept-encoding', 'authorization', 'content-type', 'dnt', 'origin', 'user-agent', 'x-csrftoken', 'x-requested-with']
@@ -168,20 +168,13 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Force HTTPS URLs in production
-USE_HTTPS = config('USE_HTTPS', default=True, cast=bool)
-if USE_HTTPS and not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = True
-
 # Security settings for production
+USE_HTTPS = config('USE_HTTPS', default=True, cast=bool)
 if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_SECONDS = 31536000
-    SECURE_REDIRECT_EXEMPT = []
-    # Force HTTPS for Railway deployment
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SESSION_COOKIE_SECURE = True

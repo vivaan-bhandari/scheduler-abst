@@ -16,7 +16,7 @@ from .serializers import (
 from .models import FacilityAccess
 from residents.models import Facility
 
-# Create your views here.
+
 
 class FacilityAccessViewSet(viewsets.ModelViewSet):
     queryset = FacilityAccess.objects.all()

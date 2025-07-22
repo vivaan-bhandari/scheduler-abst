@@ -17,7 +17,7 @@ from rest_framework.permissions import AllowAny
 
 logger = logging.getLogger(__name__)
 
-# Create your views here.
+
 
 class ResidentViewSet(viewsets.ModelViewSet):
     queryset = Resident.objects.all()

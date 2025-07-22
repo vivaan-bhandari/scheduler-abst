@@ -1,159 +1,136 @@
 # ABST - Acuity Based Staffing Tool
 
-A fullstack web application for managing acuity-based staffing calculations in healthcare facilities.
+A comprehensive web application for managing acuity-based staffing calculations in healthcare facilities. Built with Django REST Framework backend and React frontend.
 
-## Tech Stack
+## 🚀 Features
+
+- **User Management**: Secure authentication with role-based access control
+- **Facility Management**: Multi-facility support with section-based organization
+- **Resident Management**: Complete resident lifecycle management
+- **ADL Tracking**: Activities of Daily Living assessment and time tracking
+- **Analytics Dashboard**: Real-time caregiving time summaries and reports
+- **Data Import/Export**: CSV upload capabilities for bulk data management
+
+## 🛠 Tech Stack
 
 - **Backend**: Django 4.2 + Django REST Framework
 - **Frontend**: React 18 + Material-UI
-- **Database**: PostgreSQL (with SQLite fallback for development)
+- **Database**: PostgreSQL (production) / SQLite (development)
 - **Authentication**: Token-based authentication
+- **Deployment**: Railway (backend) + Vercel (frontend)
 
-## Features
-
-- ✅ User authentication (login/register/logout)
-- ✅ View all saved ADL responses with pagination
-- ✅ Edit and delete ADL records
-- ✅ Search and filter functionality
-- ✅ Real-time statistics dashboard
-- ✅ Responsive Material-UI interface
-
-## Quick Start
-
-### Prerequisites
+## 📋 Prerequisites
 
 - Python 3.9+
 - Node.js 16+
 - PostgreSQL (optional, falls back to SQLite)
 
-### Installation
+## 🚀 Quick Start
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd abst-fullstack
-   ```
-
-2. **Install dependencies**
-   ```bash
-   # Install root dependencies
-   npm install
-   
-   # Install backend dependencies
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   
-   # Install frontend dependencies
-   cd ../frontend
-   npm install
-   ```
-
-3. **Set up the database**
-   ```bash
-   cd ../backend
-   python manage.py makemigrations
-   python manage.py migrate
-   ```
-
-4. **Create a superuser (optional)**
-   ```bash
-   python manage.py createsuperuser
-   ```
-
-### Running the Application
-
-#### Development Mode (Both Frontend and Backend)
+### 1. Clone and Install
 ```bash
-# From the root directory
+git clone <repository-url>
+cd abst-fullstack
+npm install
+```
+
+### 2. Backend Setup
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+```
+
+### 3. Frontend Setup
+```bash
+cd ../frontend
+npm install
+```
+
+### 4. Run Development Servers
+```bash
+# From root directory
 npm run dev
 ```
 
-#### Individual Services
-```bash
-# Backend only (Django)
-npm run start-backend
-
-# Frontend only (React)
-npm run start-frontend
-```
-
-The application will be available at:
+**Access Points:**
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - Django Admin: http://localhost:8000/admin
 
-## API Endpoints
+## 📚 API Documentation
 
 ### Authentication
-- `POST /api/users/register/` - Create new user account
-- `POST /api/users/login/` - Get authentication token
-- `POST /api/users/logout/` - Invalidate token
+- `POST /api/users/register/` - User registration
+- `POST /api/users/login/` - User authentication
+- `POST /api/users/logout/` - User logout
 
-### ADLs (require authentication)
-- `GET /api/adls/` - List all ADLs (paginated)
-- `POST /api/adls/` - Create new ADL
-- `GET /api/adls/{id}/` - Get specific ADL
-- `PUT /api/adls/{id}/` - Update ADL
-- `DELETE /api/adls/{id}/` - Soft delete ADL
-- `GET /api/adls/by_resident/` - Filter by resident
-- `GET /api/adls/by_date/` - View by date range
-- `GET /api/adls/summary/` - Get statistics
+### Core Resources
+- `GET /api/facilities/` - List facilities
+- `GET /api/residents/` - List residents
+- `GET /api/adls/` - List ADL records
+- `POST /api/adls/upload/` - Bulk ADL data import
 
-### Residents
-- `GET /api/residents/` - List all residents
-- `POST /api/residents/` - Create new resident
-- `GET /api/residents/{id}/` - Get specific resident
-- `PUT /api/residents/{id}/` - Update resident
-- `DELETE /api/residents/{id}/` - Delete resident
+### Analytics
+- `GET /api/facilities/{id}/caregiving_summary/` - Facility caregiving summary
+- `GET /api/residents/{id}/caregiving_summary/` - Resident caregiving summary
 
-## Database Configuration
-
-### PostgreSQL (Production)
-Set environment variables:
-```bash
-export USE_POSTGRES=true
-export DB_NAME=abst_db
-export DB_USER=postgres
-export DB_PASSWORD=your_password
-export DB_HOST=localhost
-export DB_PORT=5432
-```
-
-### SQLite (Development - Default)
-No configuration needed. The application will automatically use SQLite for development.
-
-## Project Structure
+## 🏗 Project Structure
 
 ```
 abst-fullstack/
 ├── backend/                 # Django backend
-│   ├── abst/               # Django project settings
-│   ├── adls/               # ADL management app
-│   ├── residents/          # Resident management app
-│   ├── users/              # User authentication app
-│   ├── manage.py
-│   └── requirements.txt
+│   ├── abst/               # Project settings & configuration
+│   ├── adls/               # ADL management & analytics
+│   ├── residents/          # Facility & resident management
+│   ├── users/              # Authentication & access control
+│   └── requirements.txt    # Python dependencies
 ├── frontend/               # React frontend
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── Auth/       # Authentication components
-│   │   │   └── Dashboard/  # Main dashboard components
-│   │   └── App.js
-│   └── package.json
-├── package.json            # Root package.json
+│   │   │   ├── Dashboard/  # Main dashboard & analytics
+│   │   │   └── Facility/   # Facility management
+│   │   └── App.tsx         # Main application
+│   └── package.json        # Node dependencies
 └── README.md
 ```
 
-## Contributing
+## 🔧 Configuration
+
+### Environment Variables
+```bash
+# Django Settings
+SECRET_KEY=your-secret-key
+DEBUG=False
+DATABASE_URL=postgresql://user:pass@host:port/db
+
+# CORS Settings
+CORS_ALLOWED_ORIGINS=https://yourdomain.com,http://localhost:3000
+```
+
+## 📊 Database Schema
+
+The application uses a relational database with the following key models:
+- **Facility**: Healthcare facilities with sections
+- **Resident**: Patients within facility sections
+- **ADL**: Activities of Daily Living records with time tracking
+- **User**: System users with role-based permissions
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## License
+## 📄 License
 
-MIT License - see LICENSE file for details 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+For support and questions, please contact the development team or create an issue in the repository. 
