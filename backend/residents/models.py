@@ -33,6 +33,7 @@ class Resident(models.Model):
     name = models.CharField(max_length=255)
     status = models.CharField(max_length=100)
     facility_section = models.ForeignKey(FacilitySection, on_delete=models.CASCADE, related_name='residents')
+    total_shift_times = models.JSONField(default=dict, blank=True)  # Store resident total shift times for chart calculations
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)

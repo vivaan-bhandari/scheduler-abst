@@ -215,13 +215,14 @@ class ResidentViewSet(viewsets.ModelViewSet):
         per_shift = [
             {'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in days
         ]
-        for adl in adls:
-            times = adl.per_day_shift_times or {}
-            for i, prefix in enumerate(day_prefixes):
-                for shift_num, shift_name in shift_map.items():
-                    col = f'{prefix}{shift_num}Time'
-                    minutes = times.get(col, 0)
-                    per_shift[i][shift_name] += minutes / 60.0
+        
+        # Use resident total shift times for chart calculation (like Oregon ABST)
+        resident_total_times = resident.total_shift_times or {}
+        for i, prefix in enumerate(day_prefixes):
+            for shift_num, shift_name in shift_map.items():
+                col = f'ResidentTotal{prefix}{shift_num}Time'
+                minutes = resident_total_times.get(col, 0)
+                per_shift[i][shift_name] += minutes / 60.0
         for s in per_shift:
             for shift in ['Day', 'Eve', 'NOC']:
                 s[shift] = round(s[shift], 2)
@@ -314,12 +315,14 @@ class FacilityViewSet(viewsets.ModelViewSet):
         per_shift = [
             {'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in days
         ]
-        for adl in adls:
-            times = adl.per_day_shift_times or {}
+        
+        # Use resident total shift times for chart calculation (like Oregon ABST)
+        for resident in residents:
+            resident_total_times = resident.total_shift_times or {}
             for i, prefix in enumerate(day_prefixes):
                 for shift_num, shift_name in shift_map.items():
-                    col = f'{prefix}{shift_num}Time'
-                    minutes = times.get(col, 0)
+                    col = f'ResidentTotal{prefix}{shift_num}Time'
+                    minutes = resident_total_times.get(col, 0)
                     per_shift[i][shift_name] += minutes / 60.0
         for s in per_shift:
             for shift in ['Day', 'Eve', 'NOC']:
@@ -382,12 +385,14 @@ class FacilitySectionViewSet(viewsets.ModelViewSet):
         per_shift = [
             {'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in days
         ]
-        for adl in adls:
-            times = adl.per_day_shift_times or {}
+        
+        # Use resident total shift times for chart calculation (like Oregon ABST)
+        for resident in residents:
+            resident_total_times = resident.total_shift_times or {}
             for i, prefix in enumerate(day_prefixes):
                 for shift_num, shift_name in shift_map.items():
-                    col = f'{prefix}{shift_num}Time'
-                    minutes = times.get(col, 0)
+                    col = f'ResidentTotal{prefix}{shift_num}Time'
+                    minutes = resident_total_times.get(col, 0)
                     per_shift[i][shift_name] += minutes / 60.0  # convert to hours
         # Optionally round to 2 decimals
         for s in per_shift:
