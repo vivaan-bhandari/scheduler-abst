@@ -33,3 +33,4 @@ python manage.py runserver
 - `/api/residents/` - Resident management
 - `/api/adls/` - ADL records and analytics
 - `/api/users/` - User authentication and management
+# Force Railway redeploy Tue Jul 22 23:01:58 IST 2025
