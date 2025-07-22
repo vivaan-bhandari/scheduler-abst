@@ -206,6 +206,12 @@ class ADLViewSet(viewsets.ModelViewSet):
                         try:
                             facility = Facility.objects.get(facility_id=facility_id)
                         except Facility.DoesNotExist:
+                            # Try alternative ID mappings for Murray Highland
+                            if facility_id == '50R460':
+                                try:
+                                    facility = Facility.objects.get(name__iexact='Murray Highland')
+                                except Facility.DoesNotExist:
+                                    pass
                             pass
                     
                     # If not found by ID, try by name with flexible matching
