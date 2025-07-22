@@ -268,7 +268,7 @@ class ADLViewSet(viewsets.ModelViewSet):
                         task_time = 0
                     
                     # Prepare per-day/shift times dict from individual shift columns
-                    # CSV values are minutes, but we store them as frequency for frontend display
+                    # CSV values represent frequency (how many times activity occurs in that shift)
                     per_day_shift_times = {}
                     total_frequency_from_shifts = 0
                     for col in per_day_shift_cols:
@@ -276,7 +276,7 @@ class ADLViewSet(viewsets.ModelViewSet):
                             value = row.get(col, 0)
                             if pd.isna(value) or value is None:
                                 value = 0
-                            # Store the actual minutes value as frequency (for frontend display)
+                            # Store frequency (how many times activity occurs in this shift)
                             per_day_shift_times[col] = int(float(value))
                             total_frequency_from_shifts += int(float(value))
                     
@@ -291,7 +291,7 @@ class ADLViewSet(viewsets.ModelViewSet):
                         defaults={
                             'question_text': question_text,
                             'minutes': int(task_time),
-                            'frequency': int(total_frequency),
+                            'frequency': int(total_frequency_from_shifts),
                             'total_minutes': total_minutes,
                             'total_hours': total_hours,
                             'status': row.get('ResidentStatus', 'Complete'),
