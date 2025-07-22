@@ -269,33 +269,77 @@ class ADLViewSet(viewsets.ModelViewSet):
                     total_minutes = sum(per_day_shift_times.values())
                     total_hours = float(total_minutes) / 60 if total_minutes else 0
                     
-                    # For resident-based CSV, we need to create a single ADL record with aggregated data
-                    # Use a default ADL question or create a generic one
-                    default_question_text = "Total caregiving time for resident"
-                    adl_question, _ = ADLQuestion.objects.get_or_create(
-                        text=default_question_text,
-                        defaults={'order': 999}
-                    )
+                    # For resident-based CSV, we need to create individual ADL records for each standard question
+                    # Get all standard ADL questions
+                    standard_questions = ADLQuestion.objects.all().order_by('order')
                     
-                    # Update or create ADL entry
-                    adl, created = ADL.objects.update_or_create(
-                        resident=current_resident,
-                        adl_question=adl_question,
-                        defaults={
-                            'question_text': default_question_text,
-                            'minutes': total_minutes,  # Use total minutes as the task time
-                            'frequency': 1,  # Default frequency
-                            'total_minutes': total_minutes,
-                            'total_hours': total_hours,
-                            'status': row.get('Status', 'Complete'),
-                            'per_day_shift_times': per_day_shift_times,
-                        }
-                    )
+                    if not standard_questions.exists():
+                        # If no questions exist, seed them first
+                        from adls.seed_adl_questions import seed_adl_questions
+                        seed_adl_questions()
+                        standard_questions = ADLQuestion.objects.all().order_by('order')
                     
-                    if created:
-                        created_adls += 1
+                    # Calculate minutes per question (distribute total minutes across questions)
+                    # For now, we'll distribute evenly, but this could be made more sophisticated
+                    questions_count = standard_questions.count()
+                    if questions_count > 0:
+                        minutes_per_question = total_minutes // questions_count
+                        remaining_minutes = total_minutes % questions_count
+                        
+                        for i, adl_question in enumerate(standard_questions):
+                            # Distribute remaining minutes to first few questions
+                            question_minutes = minutes_per_question + (1 if i < remaining_minutes else 0)
+                            
+                            # Create per-day shift times for this question (distribute proportionally)
+                            question_per_day_shift_times = {}
+                            for col, value in per_day_shift_times.items():
+                                question_per_day_shift_times[col] = value // questions_count
+                            
+                            # Update or create ADL entry for this specific question
+                            adl, created = ADL.objects.update_or_create(
+                                resident=current_resident,
+                                adl_question=adl_question,
+                                defaults={
+                                    'question_text': adl_question.text,
+                                    'minutes': question_minutes,
+                                    'frequency': 1,  # Default frequency
+                                    'total_minutes': question_minutes,
+                                    'total_hours': float(question_minutes) / 60 if question_minutes else 0,
+                                    'status': row.get('Status', 'Complete'),
+                                    'per_day_shift_times': question_per_day_shift_times,
+                                }
+                            )
+                            
+                            if created:
+                                created_adls += 1
+                            else:
+                                updated_adls += 1
                     else:
-                        updated_adls += 1
+                        # Fallback: create a single aggregated ADL record
+                        default_question_text = "Total caregiving time for resident"
+                        adl_question, _ = ADLQuestion.objects.get_or_create(
+                            text=default_question_text,
+                            defaults={'order': 999}
+                        )
+                        
+                        adl, created = ADL.objects.update_or_create(
+                            resident=current_resident,
+                            adl_question=adl_question,
+                            defaults={
+                                'question_text': default_question_text,
+                                'minutes': total_minutes,
+                                'frequency': 1,
+                                'total_minutes': total_minutes,
+                                'total_hours': total_hours,
+                                'status': row.get('Status', 'Complete'),
+                                'per_day_shift_times': per_day_shift_times,
+                            }
+                        )
+                        
+                        if created:
+                            created_adls += 1
+                        else:
+                            updated_adls += 1
                     
                     print(f"Row {index}: Processed resident '{resident_name}' with {total_minutes} total minutes")
                     
