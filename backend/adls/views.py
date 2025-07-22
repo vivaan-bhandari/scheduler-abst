@@ -279,36 +279,98 @@ class ADLViewSet(viewsets.ModelViewSet):
                         seed_adl_questions()
                         standard_questions = ADLQuestion.objects.all().order_by('order')
                     
-                    # Calculate minutes per question (distribute total minutes across questions)
-                    # For now, we'll distribute evenly, but this could be made more sophisticated
+                    # Create realistic ADL data based on total care time
+                    # Instead of distributing evenly, create realistic activity patterns
                     questions_count = standard_questions.count()
                     if questions_count > 0:
-                        minutes_per_question = total_minutes // questions_count
-                        remaining_minutes = total_minutes % questions_count
+                        # Define realistic activity patterns (minutes per activity, frequency per day)
+                        activity_patterns = [
+                            {'minutes': 15, 'frequency': 2},   # Personal hygiene
+                            {'minutes': 5, 'frequency': 8},    # Safety checks
+                            {'minutes': 3, 'frequency': 12},   # Call lights
+                            {'minutes': 10, 'frequency': 3},   # Communication
+                            {'minutes': 8, 'frequency': 4},    # Behavioral monitoring
+                            {'minutes': 8, 'frequency': 4},    # Physical monitoring
+                            {'minutes': 20, 'frequency': 2},   # Leisure activities
+                            {'minutes': 12, 'frequency': 3},   # Non-drug interventions
+                            {'minutes': 15, 'frequency': 6},   # Cognitive cueing
+                            {'minutes': 25, 'frequency': 2},   # Treatments
+                            {'minutes': 10, 'frequency': 3},   # Pain management
+                            {'minutes': 8, 'frequency': 4},    # Medication
+                            {'minutes': 30, 'frequency': 3},   # Eating assistance
+                            {'minutes': 15, 'frequency': 4},   # Ambulation
+                            {'minutes': 10, 'frequency': 6},   # Repositioning
+                            {'minutes': 20, 'frequency': 3},   # Transfers
+                            {'minutes': 45, 'frequency': 1},   # Bathing
+                            {'minutes': 15, 'frequency': 4},   # Bowel/bladder
+                            {'minutes': 20, 'frequency': 2},   # Dressing
+                            {'minutes': 15, 'frequency': 2},   # Grooming
+                            {'minutes': 30, 'frequency': 1},   # Housekeeping
+                            {'minutes': 10, 'frequency': 2},   # Additional care
+                        ]
+                        
+                        # Calculate total expected minutes from patterns
+                        total_expected = sum(pattern['minutes'] * pattern['frequency'] for pattern in activity_patterns)
+                        
+                        # Scale patterns to match total care time from CSV
+                        scale_factor = total_minutes / total_expected if total_expected > 0 else 1
                         
                         for i, adl_question in enumerate(standard_questions):
-                            # Distribute remaining minutes to first few questions
-                            question_minutes = minutes_per_question + (1 if i < remaining_minutes else 0)
-                            
-                            # Create per-day shift times for this question (distribute proportionally)
-                            question_per_day_shift_times = {}
-                            for col, value in per_day_shift_times.items():
-                                question_per_day_shift_times[col] = value // questions_count
-                            
-                            # Update or create ADL entry for this specific question
-                            adl, created = ADL.objects.update_or_create(
-                                resident=current_resident,
-                                adl_question=adl_question,
-                                defaults={
-                                    'question_text': adl_question.text,
-                                    'minutes': question_minutes,
-                                    'frequency': 1,  # Default frequency
-                                    'total_minutes': question_minutes,
-                                    'total_hours': float(question_minutes) / 60 if question_minutes else 0,
-                                    'status': row.get('Status', 'Complete'),
-                                    'per_day_shift_times': question_per_day_shift_times,
-                                }
-                            )
+                            if i < len(activity_patterns):
+                                pattern = activity_patterns[i]
+                                # Scale the pattern to match total care time
+                                scaled_minutes = int(pattern['minutes'] * scale_factor)
+                                scaled_frequency = max(1, int(pattern['frequency'] * scale_factor))
+                                
+                                # Calculate total minutes for this activity
+                                activity_total_minutes = scaled_minutes * scaled_frequency
+                                
+                                # Create realistic per-day shift times distribution
+                                # Distribute based on typical care patterns
+                                question_per_day_shift_times = {}
+                                for col in per_day_shift_cols:
+                                    # Use original shift times but scale for this activity
+                                    original_value = per_day_shift_times.get(col, 0)
+                                    # Distribute based on activity type and frequency
+                                    if 'Shift1' in col:  # Day shift - most activities
+                                        question_per_day_shift_times[col] = max(1, original_value // (questions_count * 2))
+                                    elif 'Shift2' in col:  # Swing shift - moderate activities
+                                        question_per_day_shift_times[col] = max(0, original_value // (questions_count * 4))
+                                    else:  # NOC shift - minimal activities
+                                        question_per_day_shift_times[col] = max(0, original_value // (questions_count * 8))
+                                
+                                # Update or create ADL entry for this specific question
+                                adl, created = ADL.objects.update_or_create(
+                                    resident=current_resident,
+                                    adl_question=adl_question,
+                                    defaults={
+                                        'question_text': adl_question.text,
+                                        'minutes': scaled_minutes,
+                                        'frequency': scaled_frequency,
+                                        'total_minutes': activity_total_minutes,
+                                        'total_hours': float(activity_total_minutes) / 60 if activity_total_minutes else 0,
+                                        'status': row.get('Status', 'Complete'),
+                                        'per_day_shift_times': question_per_day_shift_times,
+                                    }
+                                )
+                            else:
+                                # Fallback for any additional questions
+                                fallback_minutes = max(5, total_minutes // (questions_count * 2))
+                                fallback_frequency = max(1, total_minutes // (questions_count * fallback_minutes))
+                                
+                                adl, created = ADL.objects.update_or_create(
+                                    resident=current_resident,
+                                    adl_question=adl_question,
+                                    defaults={
+                                        'question_text': adl_question.text,
+                                        'minutes': fallback_minutes,
+                                        'frequency': fallback_frequency,
+                                        'total_minutes': fallback_minutes * fallback_frequency,
+                                        'total_hours': float(fallback_minutes * fallback_frequency) / 60,
+                                        'status': row.get('Status', 'Complete'),
+                                        'per_day_shift_times': {},
+                                    }
+                                )
                             
                             if created:
                                 created_adls += 1
