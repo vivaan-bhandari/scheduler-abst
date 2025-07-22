@@ -15,6 +15,7 @@ def add_brighton_facilities():
         {'name': 'Murray Highland', 'facility_id': 'B002'},
         {'name': 'La Posada Senior Living', 'facility_id': 'B003'},
         {'name': 'Mill View Memory Care', 'facility_id': 'B008'},
+        {'name': 'Markham House Assisted Living', 'facility_id': 'B004'},
     ]
     
     created_count = 0

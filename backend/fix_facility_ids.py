@@ -17,7 +17,8 @@ def fix_facility_ids():
         'Buena Vista': 'B001',
         'Murray Highland': 'B002', 
         'La Posada Senior Living': 'B003',
-        'Mill View Memory Care': 'B008'
+        'Mill View Memory Care': 'B008',
+        'Markham House Assisted Living': 'B004'
     }
     
     # Update facility IDs to match Brighton Care Group format
