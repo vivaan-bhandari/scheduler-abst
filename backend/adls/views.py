@@ -278,15 +278,17 @@ class ADLViewSet(viewsets.ModelViewSet):
                         task_time = 0
                     
                     # Prepare per-day/shift times dict from individual shift columns
+                    # Set all shift values to 1 (frequency of 1 per shift) instead of using CSV values
                     per_day_shift_times = {}
                     for col in per_day_shift_cols:
                         if col in df.columns:
                             value = row.get(col, 0)
                             if pd.isna(value) or value is None:
                                 value = 0
-                            per_day_shift_times[col] = int(float(value))
+                            # Set to 1 if the activity occurs in this shift, 0 otherwise
+                            per_day_shift_times[col] = 1 if int(float(value)) > 0 else 0
                     
-                    # Get total frequency from CSV column (not from summing shift values)
+                    # Get total frequency from CSV column
                     total_frequency = row.get('TotalFrequency', 0)
                     if pd.isna(total_frequency) or total_frequency is None:
                         total_frequency = 0
