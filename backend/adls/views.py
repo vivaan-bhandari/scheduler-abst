@@ -153,6 +153,16 @@ class ADLViewSet(viewsets.ModelViewSet):
         if not file:
             return Response({'error': 'No file uploaded.'}, status=status.HTTP_400_BAD_REQUEST)
         
+        # Get facility_id from request if provided
+        facility_id = request.POST.get('facility_id')
+        target_facility = None
+        if facility_id:
+            try:
+                from residents.models import Facility
+                target_facility = Facility.objects.get(id=facility_id)
+            except Facility.DoesNotExist:
+                return Response({'error': f'Facility with ID {facility_id} not found.'}, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
             if file.name.endswith('.csv'):
                 df = pd.read_csv(file)
@@ -212,30 +222,10 @@ class ADLViewSet(viewsets.ModelViewSet):
                         facility_name = str(facility_name).strip()
                     
                     from residents.models import Facility
-                    facility = None
-                    
-                    # Try to find facility by ID first
-                    if facility_id:
-                        try:
-                            facility = Facility.objects.get(facility_id=facility_id)
-                        except Facility.DoesNotExist:
-                            # Try alternative ID mappings for Murray Highland
-                            if facility_id == '50R460':
-                                try:
-                                    facility = Facility.objects.get(name__iexact='Murray Highland')
-                                except Facility.DoesNotExist:
-                                    pass
-                            pass
-                    
-                    # If not found by ID, try by name
-                    if not facility and facility_name:
-                        try:
-                            facility = Facility.objects.get(name__iexact=facility_name)
-                        except Facility.DoesNotExist:
-                            pass
+                    facility = target_facility  # Always use the selected facility from the upload context
                     
                     if not facility:
-                        print(f"Row {index}: Facility not found for FacilityID '{facility_id}' or name '{facility_name}'. Skipping row.")
+                        print(f"Row {index}: No facility selected for import. Skipping row.")
                         continue
                     
                     # Get or create section
