@@ -20,6 +20,47 @@ def force_remove_facilities():
         'CrossRoads'
     ]
     
+    # Also remove any duplicate Murray Highland facilities (keep only B002)
+    print("Checking for duplicate Murray Highland facilities...")
+    murray_highlands = Facility.objects.filter(name__icontains='Murray Highland')
+    if murray_highlands.count() > 1:
+        print(f"Found {murray_highlands.count()} Murray Highland facilities")
+        # Keep the one with facility_id B002, delete the rest
+        correct_murray = murray_highlands.filter(facility_id='B002').first()
+        if correct_murray:
+            for duplicate in murray_highlands.exclude(id=correct_murray.id):
+                print(f"  DELETING duplicate Murray Highland: {duplicate.name} (ID: {duplicate.id}, Facility ID: {duplicate.facility_id})")
+                
+                # Delete all ADLs for residents in this facility
+                adls = ADL.objects.filter(resident__facility_section__facility=duplicate)
+                adl_count = adls.count()
+                adls.delete()
+                print(f"    - Deleted {adl_count} ADL records")
+                
+                # Delete all residents in this facility
+                residents = Resident.objects.filter(facility_section__facility=duplicate)
+                resident_count = residents.count()
+                residents.delete()
+                print(f"    - Deleted {resident_count} residents")
+                
+                # Delete all sections in this facility
+                sections = FacilitySection.objects.filter(facility=duplicate)
+                section_count = sections.count()
+                sections.delete()
+                print(f"    - Deleted {section_count} sections")
+                
+                # Delete the duplicate facility
+                duplicate.delete()
+                print(f"    - DELETED duplicate facility: {duplicate.name}")
+        else:
+            print("  No Murray Highland with facility_id B002 found, keeping the first one")
+            first_murray = murray_highlands.first()
+            for duplicate in murray_highlands.exclude(id=first_murray.id):
+                print(f"  DELETING duplicate Murray Highland: {duplicate.name} (ID: {duplicate.id})")
+                duplicate.delete()
+    else:
+        print("No duplicate Murray Highland facilities found")
+    
     for facility_name in facilities_to_remove:
         try:
             # Find all facilities with this name (case insensitive)
