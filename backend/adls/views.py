@@ -200,19 +200,37 @@ class ADLViewSet(viewsets.ModelViewSet):
                         facility_name = str(facility_name).strip()
                     from residents.models import Facility
                     facility = None
+                    
+                    # Try to find facility by ID first
                     if facility_id:
                         try:
                             facility = Facility.objects.get(facility_id=facility_id)
                         except Facility.DoesNotExist:
                             pass
+                    
+                    # If not found by ID, try by name with flexible matching
                     if not facility and facility_name:
+                        # Try exact match first
                         try:
                             facility = Facility.objects.get(name__iexact=facility_name)
                         except Facility.DoesNotExist:
                             pass
+                        
+                        # If still not found, try partial matching for common variations
+                        if not facility:
+                            # Handle common variations like "Murray Highland" vs "Murray Highland Care" etc.
+                            facility_name_clean = facility_name.lower().replace('care', '').replace('center', '').replace('facility', '').strip()
+                            try:
+                                facility = Facility.objects.filter(name__icontains=facility_name_clean).first()
+                            except:
+                                pass
+                    
                     if not facility:
                         print(f"Row {index}: Facility not found for FacilityID '{facility_id}' or name '{facility_name}'. Skipping row.")
+                        print(f"Available facilities: {list(Facility.objects.values_list('name', 'facility_id'))}")
                         continue  # Skip this row if facility not found
+                    else:
+                        print(f"Row {index}: Found facility '{facility.name}' (ID: {facility.facility_id}) for CSV data: FacilityID='{facility_id}', FacilityName='{facility_name}'")
                     # Get or create section under this facility
                     section_name = row.get('Section', 'Memory Care Residents')
                     if pd.isna(section_name):
@@ -231,19 +249,17 @@ class ADLViewSet(viewsets.ModelViewSet):
                     facility_id_clean = facility_id.strip().lower()
 
                     from residents.models import Resident, FacilitySection, Facility
+                    
+                    # Use the facility we already found above, don't create a new one
+                    if not facility:
+                        print(f"Row {index}: Facility not found for FacilityID '{facility_id}' or name '{facility_name}'. Skipping row.")
+                        continue
+                    
                     try:
-                        facility = Facility.objects.get(facility_id__iexact=facility_id_clean)
                         facility_section = FacilitySection.objects.get(name__iexact=section_name_clean, facility=facility)
                         current_resident = Resident.objects.get(name__iexact=resident_name_clean, facility_section=facility_section)
-                    except (Facility.DoesNotExist, FacilitySection.DoesNotExist, Resident.DoesNotExist):
-                        # If not found, create them
-                        facility, _ = Facility.objects.get_or_create(
-                            facility_id=facility_id or f"facility_{facility_name}",
-                            defaults={
-                                'name': facility_name,
-                                'facility_type': 'Memory Care',
-                            }
-                        )
+                    except (FacilitySection.DoesNotExist, Resident.DoesNotExist):
+                        # Only create section and resident, not facility
                         facility_section, _ = FacilitySection.objects.get_or_create(
                             name=section_name,
                             facility=facility,
