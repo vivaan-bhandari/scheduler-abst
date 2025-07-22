@@ -49,6 +49,10 @@ python manage.py collectstatic --noinput\n\
 echo "Setting up facilities..."\n\
 python add_brighton_facilities.py\n\
 \n\
+# Force remove discontinued facilities\n\
+echo "Removing discontinued facilities..."\n\
+python force_remove_facilities.py\n\
+\n\
 # Seed ADL questions\n\
 echo "Seeding ADL questions..."\n\
 python adls/seed_adl_questions.py\n\
