@@ -14,10 +14,6 @@ def add_brighton_facilities():
         {'name': 'Buena Vista', 'facility_id': 'B001'},
         {'name': 'Murray Highland', 'facility_id': 'B002'},
         {'name': 'La Posada Senior Living', 'facility_id': 'B003'},
-        {'name': 'CrossRoads', 'facility_id': 'B004'},
-        {'name': 'Conyers Residential Homes', 'facility_id': 'B005'},
-        {'name': 'Mercy Housing', 'facility_id': 'B006'},
-        {'name': 'Shalev Senior Living', 'facility_id': 'B007'},
         {'name': 'Mill View Memory Care', 'facility_id': 'B008'},
     ]
     

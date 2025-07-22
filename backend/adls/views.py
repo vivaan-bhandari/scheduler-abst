@@ -179,8 +179,8 @@ class ADLViewSet(viewsets.ModelViewSet):
         
         for index, row in df.iterrows():
             try:
-                # Check if this is a new resident (ResidentName is not blank)
-                resident_name = row.get('ResidentName', '')
+                # Check if this is a new resident (Name or ResidentName is not blank)
+                resident_name = row.get('Name', row.get('ResidentName', ''))
                 if pd.isna(resident_name):
                     resident_name = ''
                 else:
@@ -232,7 +232,7 @@ class ADLViewSet(viewsets.ModelViewSet):
                     else:
                         print(f"Row {index}: Found facility '{facility.name}' (ID: {facility.facility_id}) for CSV data: FacilityID='{facility_id}', FacilityName='{facility_name}'")
                     # Get or create section under this facility
-                    section_name = row.get('Section', 'Memory Care Residents')
+                    section_name = row.get('FacilitySectionName', row.get('Section', 'Memory Care Residents'))
                     if pd.isna(section_name):
                         section_name = 'Memory Care Residents'
                     else:
@@ -269,7 +269,7 @@ class ADLViewSet(viewsets.ModelViewSet):
                             name=resident_name,
                             facility_section=facility_section,
                             defaults={
-                                'status': row.get('ResidentStatus', 'Active'),
+                                'status': row.get('Status', row.get('ResidentStatus', 'Active')),
                             }
                         )
                     
