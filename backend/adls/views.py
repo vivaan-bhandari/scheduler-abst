@@ -177,9 +177,150 @@ class ADLViewSet(viewsets.ModelViewSet):
         ]
         
         # Check if this is a resident-based CSV (one row per resident) or ADL-based CSV (one row per ADL)
-        is_resident_based = 'Name' in df.columns and 'TotalCareTime' in df.columns
+        is_resident_based = 'Name' in df.columns and 'TotalCareTime' in df.columns and 'QuestionText' not in df.columns
+        is_adl_answer_export = 'QuestionText' in df.columns and 'ResidentName' in df.columns
         
-        if is_resident_based:
+        if is_adl_answer_export:
+            # Handle ADL Answer Export format (like the Murray Highland Answer Export)
+            print("Processing ADL Answer Export format...")
+            
+            for index, row in df.iterrows():
+                try:
+                    # Get question text
+                    question_text = row.get('QuestionText', '')
+                    if pd.isna(question_text) or not str(question_text).strip():
+                        continue
+                    question_text = str(question_text).strip()
+                    
+                    # Get resident name
+                    resident_name = row.get('ResidentName', '')
+                    if pd.isna(resident_name) or not str(resident_name).strip():
+                        continue
+                    resident_name = str(resident_name).strip()
+                    
+                    # Get facility information
+                    facility_id = row.get('FacilityID', '')
+                    if pd.isna(facility_id):
+                        facility_id = ''
+                    else:
+                        facility_id = str(facility_id).strip()
+                    
+                    facility_name = row.get('FacilityName', '')
+                    if pd.isna(facility_name):
+                        facility_name = ''
+                    else:
+                        facility_name = str(facility_name).strip()
+                    
+                    from residents.models import Facility
+                    facility = None
+                    
+                    # Try to find facility by ID first
+                    if facility_id:
+                        try:
+                            facility = Facility.objects.get(facility_id=facility_id)
+                        except Facility.DoesNotExist:
+                            # Try alternative ID mappings for Murray Highland
+                            if facility_id == '50R460':
+                                try:
+                                    facility = Facility.objects.get(name__iexact='Murray Highland')
+                                except Facility.DoesNotExist:
+                                    pass
+                            pass
+                    
+                    # If not found by ID, try by name
+                    if not facility and facility_name:
+                        try:
+                            facility = Facility.objects.get(name__iexact=facility_name)
+                        except Facility.DoesNotExist:
+                            pass
+                    
+                    if not facility:
+                        print(f"Row {index}: Facility not found for FacilityID '{facility_id}' or name '{facility_name}'. Skipping row.")
+                        continue
+                    
+                    # Get or create section
+                    section_name = row.get('FacilitySectionName', 'whole building')
+                    if pd.isna(section_name):
+                        section_name = 'whole building'
+                    else:
+                        section_name = str(section_name).strip()
+                    
+                    from residents.models import FacilitySection, Resident
+                    facility_section, _ = FacilitySection.objects.get_or_create(
+                        name=section_name,
+                        facility=facility
+                    )
+                    
+                    # Get or create resident
+                    current_resident, created = Resident.objects.get_or_create(
+                        name=resident_name,
+                        facility_section=facility_section,
+                        defaults={
+                            'status': row.get('ResidentStatus', 'Active'),
+                        }
+                    )
+                    
+                    if created:
+                        created_residents += 1
+                    
+                    # Find the ADLQuestion object
+                    adl_question = ADLQuestion.objects.filter(text__iexact=question_text).first()
+                    if not adl_question:
+                        # Create the question if it doesn't exist
+                        adl_question, _ = ADLQuestion.objects.get_or_create(
+                            text=question_text,
+                            defaults={'order': 999}
+                        )
+                    
+                    # Get task time and frequency from CSV
+                    task_time = row.get('TaskTime', 0)
+                    if pd.isna(task_time) or task_time is None:
+                        task_time = 0
+                    
+                    total_frequency = row.get('TotalFrequency', 0)
+                    if pd.isna(total_frequency) or total_frequency is None:
+                        total_frequency = 0
+                    
+                    # Calculate total minutes
+                    total_minutes = int(task_time) * int(total_frequency)
+                    total_hours = float(total_minutes) / 60 if total_minutes else 0
+                    
+                    # Prepare per-day/shift times dict from individual shift columns
+                    per_day_shift_times = {}
+                    for col in per_day_shift_cols:
+                        if col in df.columns:
+                            value = row.get(col, 0)
+                            if pd.isna(value) or value is None:
+                                value = 0
+                            per_day_shift_times[col] = int(float(value))
+                    
+                    # Update or create ADL entry
+                    adl, created = ADL.objects.update_or_create(
+                        resident=current_resident,
+                        adl_question=adl_question,
+                        defaults={
+                            'question_text': question_text,
+                            'minutes': int(task_time),
+                            'frequency': int(total_frequency),
+                            'total_minutes': total_minutes,
+                            'total_hours': total_hours,
+                            'status': row.get('ResidentStatus', 'Complete'),
+                            'per_day_shift_times': per_day_shift_times,
+                        }
+                    )
+                    
+                    if created:
+                        created_adls += 1
+                    else:
+                        updated_adls += 1
+                    
+                    print(f"Row {index}: Processed '{question_text}' for resident '{resident_name}' - {task_time}min x {total_frequency} = {total_minutes} total minutes")
+                    
+                except Exception as e:
+                    print(f"Error processing row {index}: {e}")
+                    continue
+                    
+        elif is_resident_based:
             # Handle resident-based CSV format (like the Murray Highland export)
             print("Processing resident-based CSV format...")
             
