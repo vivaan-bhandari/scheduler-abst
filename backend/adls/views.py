@@ -279,17 +279,20 @@ class ADLViewSet(viewsets.ModelViewSet):
                     
                     # Prepare per-day/shift times dict from individual shift columns
                     per_day_shift_times = {}
-                    total_frequency = 0
                     for col in per_day_shift_cols:
                         if col in df.columns:
                             value = row.get(col, 0)
                             if pd.isna(value) or value is None:
                                 value = 0
                             per_day_shift_times[col] = int(float(value))
-                            total_frequency += int(float(value))
                     
-                    # Calculate total minutes
-                    total_minutes = int(task_time) * total_frequency
+                    # Get total frequency from CSV column (not from summing shift values)
+                    total_frequency = row.get('TotalFrequency', 0)
+                    if pd.isna(total_frequency) or total_frequency is None:
+                        total_frequency = 0
+                    
+                    # Calculate total minutes (TaskTime × TotalFrequency from CSV)
+                    total_minutes = int(task_time) * int(total_frequency)
                     total_hours = float(total_minutes) / 60 if total_minutes else 0
                     
                     # Update or create ADL entry
