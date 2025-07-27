@@ -875,12 +875,16 @@ class ADLViewSet(viewsets.ModelViewSet):
         per_shift = [
             {'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in days
         ]
-        for adl in adls:
-            times = adl.per_day_shift_times or {}
+        
+        # Use resident total shift times for chart calculation (like Oregon ABST)
+        # Get unique residents from ADLs
+        residents = Resident.objects.filter(adls__in=adls).distinct()
+        for resident in residents:
+            resident_total_times = resident.total_shift_times or {}
             for i, prefix in enumerate(day_prefixes):
                 for shift_num, shift_name in shift_map.items():
-                    col = f'{prefix}{shift_num}Time'
-                    minutes = times.get(col, 0)
+                    col = f'ResidentTotal{prefix}{shift_num}Time'
+                    minutes = resident_total_times.get(col, 0)
                     per_shift[i][shift_name] += minutes / 60.0
         for s in per_shift:
             for shift in ['Day', 'Eve', 'NOC']:
