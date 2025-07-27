@@ -411,6 +411,29 @@ class ADLViewSet(viewsets.ModelViewSet):
                     if created:
                         created_residents += 1
                     
+                    # Store resident total shift times for chart calculations (like Oregon ABST)
+                    resident_total_shift_times = {}
+                    resident_total_shift_cols = [
+                        'ResidentTotalMonShift1Time', 'ResidentTotalMonShift2Time', 'ResidentTotalMonShift3Time',
+                        'ResidentTotalTuesShift1Time', 'ResidentTotalTuesShift2Time', 'ResidentTotalTuesShift3Time',
+                        'ResidentTotalWedShift1Time', 'ResidentTotalWedShift2Time', 'ResidentTotalWedShift3Time',
+                        'ResidentTotalThursShift1Time', 'ResidentTotalThursShift2Time', 'ResidentTotalThursShift3Time',
+                        'ResidentTotalFriShift1Time', 'ResidentTotalFriShift2Time', 'ResidentTotalFriShift3Time',
+                        'ResidentTotalSatShift1Time', 'ResidentTotalSatShift2Time', 'ResidentTotalSatShift3Time',
+                        'ResidentTotalSunShift1Time', 'ResidentTotalSunShift2Time', 'ResidentTotalSunShift3Time',
+                    ]
+                    
+                    for col in resident_total_shift_cols:
+                        if col in df.columns:
+                            value = row.get(col, 0)
+                            if pd.isna(value) or value is None:
+                                value = 0
+                            resident_total_shift_times[col] = int(float(value))
+                    
+                    # Update resident with total shift times
+                    current_resident.total_shift_times = resident_total_shift_times
+                    current_resident.save()
+                    
                     # Prepare per-day/shift times dict
                     per_day_shift_times = {}
                     for col in per_day_shift_cols:
