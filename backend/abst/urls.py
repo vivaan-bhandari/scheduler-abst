@@ -53,6 +53,7 @@ def healthcheck(request):
 
 @csrf_exempt
 def root_healthcheck(request):
+    # This endpoint is specifically for Railway healthcheck on root path /
     return JsonResponse({"status": "healthy", "message": "Django app is running", "endpoints": ["/health/", "/admin/", "/api/"]})
 
 urlpatterns = [
