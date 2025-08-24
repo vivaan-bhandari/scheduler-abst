@@ -54,13 +54,13 @@ def healthcheck(request):
     return JsonResponse({"status": "healthy", "message": "Django app is running"})
 
 @csrf_exempt
-@no_append_slash
 def root_healthcheck(request):
     # This endpoint is specifically for Railway healthcheck on root path /
     # Return a simple response that bypasses Django's host validation
+    # Use raw HttpResponse with minimal content
     return HttpResponse(
-        '{"status": "healthy", "message": "Django app is running"}',
-        content_type='application/json',
+        'OK',
+        content_type='text/plain',
         status=200
     )
 
