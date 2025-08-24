@@ -19,8 +19,10 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.common import no_append_slash
 from rest_framework.routers import DefaultRouter
 from adls.views import ADLViewSet
 from residents.views import ResidentViewSet, FacilityViewSet, FacilitySectionViewSet
@@ -52,9 +54,15 @@ def healthcheck(request):
     return JsonResponse({"status": "healthy", "message": "Django app is running"})
 
 @csrf_exempt
+@no_append_slash
 def root_healthcheck(request):
     # This endpoint is specifically for Railway healthcheck on root path /
-    return JsonResponse({"status": "healthy", "message": "Django app is running", "endpoints": ["/health/", "/admin/", "/api/"]})
+    # Return a simple response that bypasses Django's host validation
+    return HttpResponse(
+        '{"status": "healthy", "message": "Django app is running"}',
+        content_type='application/json',
+        status=200
+    )
 
 urlpatterns = [
     path("", root_healthcheck, name="root_healthcheck"),  # Root path for Railway healthcheck
