@@ -21,6 +21,31 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.routers import DefaultRouter
+from adls.views import ADLViewSet
+from residents.views import ResidentViewSet, FacilityViewSet, FacilitySectionViewSet
+from users.views import UserViewSet, FacilityAccessViewSet
+from scheduling.views import (
+    StaffViewSet, ShiftTemplateViewSet, ShiftViewSet, StaffAssignmentViewSet,
+    StaffAvailabilityViewSet, AIInsightViewSet, AIRecommendationViewSet,
+    SchedulingDashboardViewSet
+)
+
+router = DefaultRouter()
+router.register(r'adls', ADLViewSet)
+router.register(r'residents', ResidentViewSet)
+router.register(r'users', UserViewSet)
+router.register(r'facilities', FacilityViewSet)
+router.register(r'facilitysections', FacilitySectionViewSet)
+router.register(r'facility-access', FacilityAccessViewSet, basename='facility-access')
+router.register(r'scheduling/staff', StaffViewSet)
+router.register(r'scheduling/shift-templates', ShiftTemplateViewSet)
+router.register(r'scheduling/shifts', ShiftViewSet)
+router.register(r'scheduling/assignments', StaffAssignmentViewSet)
+router.register(r'scheduling/availability', StaffAvailabilityViewSet)
+router.register(r'scheduling/ai-insights', AIInsightViewSet)
+router.register(r'scheduling/ai-recommendations', AIRecommendationViewSet)
+router.register(r'scheduling/dashboard', SchedulingDashboardViewSet, basename='scheduling-dashboard')
 
 @csrf_exempt
 def healthcheck(request):
@@ -28,9 +53,6 @@ def healthcheck(request):
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/", include("residents.urls")),
-    path("api/", include("adls.urls")),
-    path("api/", include("users.urls")),
-    path("api/", include("scheduling.urls")),
+    path("api/", include(router.urls)),
     path("health/", healthcheck, name="healthcheck"),
 ]
