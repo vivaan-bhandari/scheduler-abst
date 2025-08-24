@@ -20,38 +20,17 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
-from rest_framework.routers import DefaultRouter
-from adls.views import ADLViewSet
-from residents.views import ResidentViewSet, FacilityViewSet, FacilitySectionViewSet
-from users.views import UserViewSet, FacilityAccessViewSet
-from scheduling.views import (
-    StaffViewSet, ShiftTemplateViewSet, ShiftViewSet, StaffAssignmentViewSet,
-    StaffAvailabilityViewSet, AIInsightViewSet, AIRecommendationViewSet,
-    SchedulingDashboardViewSet
-)
+from django.views.decorators.csrf import csrf_exempt
 
-router = DefaultRouter()
-router.register(r'adls', ADLViewSet)
-router.register(r'residents', ResidentViewSet)
-router.register(r'users', UserViewSet)
-router.register(r'facilities', FacilityViewSet)
-router.register(r'facilitysections', FacilitySectionViewSet)
-router.register(r'facility-access', FacilityAccessViewSet, basename='facility-access')
-router.register(r'scheduling/staff', StaffViewSet)
-router.register(r'scheduling/shift-templates', ShiftTemplateViewSet)
-router.register(r'scheduling/shifts', ShiftViewSet)
-router.register(r'scheduling/assignments', StaffAssignmentViewSet)
-router.register(r'scheduling/availability', StaffAvailabilityViewSet)
-router.register(r'scheduling/ai-insights', AIInsightViewSet)
-router.register(r'scheduling/ai-recommendations', AIRecommendationViewSet)
-router.register(r'scheduling/dashboard', SchedulingDashboardViewSet, basename='scheduling-dashboard')
-
-def health_check(request):
-    return JsonResponse({'status': 'healthy', 'message': 'Django app is running'})
+@csrf_exempt
+def healthcheck(request):
+    return JsonResponse({"status": "healthy", "message": "Django app is running"})
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
-    path('api/health/', health_check, name='health_check'),
-    path('', health_check, name='root_health_check'),
+    path("admin/", admin.site.urls),
+    path("api/", include("residents.urls")),
+    path("api/", include("adls.urls")),
+    path("api/", include("users.urls")),
+    path("api/", include("scheduling.urls")),
+    path("health/", healthcheck, name="healthcheck"),
 ]
