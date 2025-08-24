@@ -27,15 +27,17 @@ else
     echo "Warning: add_brighton_facilities.py not found"
 fi
 
-# Try to seed ADL questions (but don't fail if it doesn't work)
+# Try to seed ADL questions using Django shell (but don't fail if it doesn't work)
 echo "Seeding ADL questions..."
-if [ -f "adls/seed_adl_questions.py" ]; then
-    # Fix Python path issue by running from the correct directory
-    cd /app/backend
-    PYTHONPATH=/app/backend python adls/seed_adl_questions.py || echo "Warning: Could not seed ADL questions"
-else
-    echo "Warning: adls/seed_adl_questions.py not found"
-fi
+python manage.py shell -c "
+try:
+    from adls.models import ADLQuestion
+    from adls.seed_adl_questions import seed_adl_questions
+    seed_adl_questions()
+    print('ADL questions seeded successfully')
+except Exception as e:
+    print(f'Warning: Could not seed ADL questions: {e}')
+" || echo "Warning: Could not seed ADL questions"
 
 # Create superuser if it doesn't exist
 echo "Checking for superuser..."
