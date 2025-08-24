@@ -180,12 +180,6 @@ DATABASES = {
 
 # Database connection options for Railway
 if RAILWAY_ENVIRONMENT == 'production':
-    # Remove sslmode as it's not a valid parameter for Django database connections
-    DATABASES['default']['OPTIONS'] = {
-        'connect_timeout': 30,
-        'application_name': 'abst-django',
-    }
-    
     # Additional production database settings
     DATABASES['default']['CONN_MAX_AGE'] = 0  # Close connections after each request
     DATABASES['default']['ATOMIC_REQUESTS'] = False  # Disable for performance
