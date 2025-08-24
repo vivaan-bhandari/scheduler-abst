@@ -30,7 +30,9 @@ fi
 # Try to seed ADL questions (but don't fail if it doesn't work)
 echo "Seeding ADL questions..."
 if [ -f "adls/seed_adl_questions.py" ]; then
-    python adls/seed_adl_questions.py || echo "Warning: Could not seed ADL questions"
+    # Fix Python path issue by running from the correct directory
+    cd /app/backend
+    PYTHONPATH=/app/backend python adls/seed_adl_questions.py || echo "Warning: Could not seed ADL questions"
 else
     echo "Warning: adls/seed_adl_questions.py not found"
 fi
