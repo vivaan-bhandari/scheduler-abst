@@ -32,6 +32,10 @@ USE_HTTPS = config('USE_HTTPS', default=False, cast=bool)
 SECURE_SSL_REDIRECT = USE_HTTPS
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if USE_HTTPS else None
 
+# Railway-specific settings
+RAILWAY_ENVIRONMENT = config('RAILWAY_ENVIRONMENT', default='production')
+RAILWAY_SERVICE_NAME = config('RAILWAY_SERVICE_NAME', default='scheduler-abst')
+
 # Security settings for HTTPS
 if USE_HTTPS:
     SECURE_BROWSER_XSS_FILTER = True
@@ -47,7 +51,16 @@ else:
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,*.railway.app,*.vercel.app', cast=lambda v: [s.strip() for s in v.split(',')])
+# Railway deployment security settings
+if RAILWAY_ENVIRONMENT == 'production':
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,*.railway.app,*.vercel.app,healthcheck.railway.app', cast=lambda v: [s.strip() for s in v.split(',')])
 
 # Application definition
 
@@ -72,6 +85,7 @@ INSTALLED_APPS = [
 
 # Middleware configuration
 MIDDLEWARE = [
+    "abst.middleware.RailwayHealthCheckMiddleware",  # Custom middleware for Railway health checks
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -119,7 +133,7 @@ if DEBUG:
     CORS_ALLOW_HEADERS = ['accept', 'accept-encoding', 'authorization', 'content-type', 'dnt', 'origin', 'user-agent', 'x-csrftoken', 'x-requested-with']
     CORS_EXPOSE_HEADERS = ['content-type', 'content-disposition']
 else:
-    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='https://abst-frontend.vercel.app,https://abst-frontend-git-main-vivaan-bhandari.vercel.app,http://localhost:3000,https://localhost:3000', cast=lambda v: [s.strip() for s in v.split(',')])
+    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='https://abst-frontend.vercel.app,https://abst-frontend-git-main-vivaan-bhandari.vercel.app,http://localhost:3000,https://localhost:3000,https://*.railway.app', cast=lambda v: [s.strip() for s in v.split(',')])
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
@@ -127,7 +141,7 @@ CORS_ALLOW_HEADERS = ['accept', 'accept-encoding', 'authorization', 'content-typ
 CORS_EXPOSE_HEADERS = ['content-type', 'content-disposition']
 
 # CSRF settings
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://abst-fullstack-production.up.railway.app,https://localhost:3000,http://localhost:3000,https://127.0.0.1:3000,http://127.0.0.1:3000,https://abst-frontend.vercel.app,https://abst-frontend-git-main-vivaan-bhandari.vercel.app', cast=lambda v: [s.strip() for s in v.split(',')])
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://abst-fullstack-production.up.railway.app,https://localhost:3000,http://localhost:3000,https://127.0.0.1:3000,http://127.0.0.1:3000,https://abst-frontend.vercel.app,https://abst-frontend-git-main-vivaan-bhandari.vercel.app,https://*.railway.app', cast=lambda v: [s.strip() for s in v.split(',')])
 
 ROOT_URLCONF = "abst.urls"
 
@@ -163,6 +177,18 @@ DATABASES = {
         conn_health_checks=True,
     )
 }
+
+# Database connection options for Railway
+if RAILWAY_ENVIRONMENT == 'production':
+    # Remove sslmode as it's not a valid parameter for Django database connections
+    DATABASES['default']['OPTIONS'] = {
+        'connect_timeout': 30,
+        'application_name': 'abst-django',
+    }
+    
+    # Additional production database settings
+    DATABASES['default']['CONN_MAX_AGE'] = 0  # Close connections after each request
+    DATABASES['default']['ATOMIC_REQUESTS'] = False  # Disable for performance
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -200,9 +226,64 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# Use WhiteNoise for static files in production
+if not DEBUG:
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+else:
+    STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
+
+# Additional static files configuration
+STATICFILES_FINDERS = [
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+]
+
+# WhiteNoise configuration for production
+if not DEBUG:
+    WHITENOISE_USE_FINDERS = True
+    WHITENOISE_AUTOREFRESH = False
+    WHITENOISE_SKIP_COMPRESS_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'ico', 'webp']
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Logging configuration for deployment debugging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}

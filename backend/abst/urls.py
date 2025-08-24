@@ -61,7 +61,8 @@ def healthcheck(request):
 @csrf_exempt
 def root_ok(request):
     # Minimal root endpoint that just returns OK
-    return HttpResponse('OK', content_type='text/plain')
+    # This is used by Railway health checks
+    return HttpResponse('OK', content_type='text/plain', status=200)
 
 urlpatterns = [
     path("", root_ok, name="root_ok"),  # Minimal root endpoint for Railway
