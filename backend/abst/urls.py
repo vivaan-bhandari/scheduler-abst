@@ -51,7 +51,12 @@ router.register(r'scheduling/dashboard', SchedulingDashboardViewSet, basename='s
 def healthcheck(request):
     return JsonResponse({"status": "healthy", "message": "Django app is running"})
 
+@csrf_exempt
+def root_healthcheck(request):
+    return JsonResponse({"status": "healthy", "message": "Django app is running", "endpoints": ["/health/", "/admin/", "/api/"]})
+
 urlpatterns = [
+    path("", root_healthcheck, name="root_healthcheck"),  # Root path for Railway healthcheck
     path("admin/", admin.site.urls),
     path("api/", include(router.urls)),
     path("health/", healthcheck, name="healthcheck"),
