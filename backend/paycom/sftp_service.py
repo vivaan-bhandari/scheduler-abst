@@ -8,6 +8,8 @@ import tempfile
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple
 import paramiko
+# Enable paramiko debug logging for troubleshooting
+paramiko.util.log_to_file('/tmp/paramiko.log') if os.path.exists('/tmp') else None
 from django.conf import settings
 from django.utils import timezone
 from .models import PaycomSyncLog, PaycomFile
@@ -50,6 +52,16 @@ class PaycomSFTPService:
         if password_raw:
             # Convert to string and handle encoding issues
             password_str = str(password_raw).strip()
+            
+            # Try Base64 decoding first (if password is Base64 encoded to avoid special char issues)
+            try:
+                import base64
+                decoded = base64.b64decode(password_str).decode('utf-8')
+                logger.info(f"Password appears to be Base64 encoded, decoded to: {repr(decoded)}")
+                password_str = decoded
+            except Exception:
+                # Not Base64 encoded, use as-is
+                pass
             
             # Railway bug: Automatically converts } to ) in environment variables
             # Workaround: Check if password has ) where it should have }
@@ -248,16 +260,25 @@ class PaycomSFTPService:
                         expected_password = 'Q{f3H}bG'
                         logger.info(f"Password equals expected: {password_str == expected_password}")
                     
-                    ssh_client.connect(
-                        hostname=self.host,
-                        port=self.port,
-                        username=self.username,
-                        password=password_str,
-                        timeout=30,
-                        allow_agent=False,
-                        look_for_keys=False,
-                        banner_timeout=30
-                    )
+                    # Try connection with explicit password handling
+                    logger.info("Attempting connection...")
+                    try:
+                        ssh_client.connect(
+                            hostname=self.host,
+                            port=self.port,
+                            username=self.username,
+                            password=password_str,
+                            timeout=30,
+                            allow_agent=False,
+                            look_for_keys=False,
+                            banner_timeout=30
+                        )
+                    except paramiko.AuthenticationException as auth_err:
+                        # Log more details about the authentication failure
+                        logger.error(f"Authentication failed. Password length: {len(password_str)}, Password repr: {repr(password_str)}")
+                        logger.error(f"Password bytes: {repr(password_str.encode('utf-8'))}")
+                        logger.error(f"Username: {self.username}, Host: {self.host}:{self.port}")
+                        raise
                 
                 # Create SFTP client
                 sftp_client = ssh_client.open_sftp()
