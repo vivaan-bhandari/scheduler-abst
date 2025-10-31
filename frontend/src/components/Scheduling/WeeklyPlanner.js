@@ -1,3 +1,4 @@
+// Version: 2025-01-11-v2 - Overnight shifts + Daily/Weekly overtime alerts + Scroll preservation
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Box,
