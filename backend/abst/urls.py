@@ -31,6 +31,9 @@ from io import StringIO
 from datetime import datetime
 import logging
 import traceback
+
+logger = logging.getLogger(__name__)
+
 from adls.views import ADLViewSet, WeeklyADLEntryViewSet, WeeklyADLSummaryViewSet
 from residents.views import ResidentViewSet, FacilityViewSet, FacilitySectionViewSet
 from users.views import UserViewSet, FacilityAccessViewSet
@@ -93,8 +96,6 @@ def root_ok(request):
     # Minimal root endpoint that just returns OK
     # This is used by Railway health checks
     return HttpResponse('OK', content_type='text/plain', status=200)
-
-logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

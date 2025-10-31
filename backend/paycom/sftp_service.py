@@ -59,7 +59,7 @@ class PaycomSFTPService:
                 if password_str.startswith('Q{f3H') and password_str.endswith('bG'):
                     # Fix the ) back to }
                     password_str = password_str.replace(')', '}', 1)  # Replace only the first ) after {
-                    logger.warning(f"Railway converted } to ). Fixed password automatically.")
+                    logger.warning("Railway converted } to ). Fixed password automatically.")
             
             # Ensure we preserve special characters correctly
             self.password = password_str
