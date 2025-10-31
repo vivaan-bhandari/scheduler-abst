@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.core.management import call_command
 from django.http import JsonResponse
+from django.conf import settings
 import logging
 import traceback
 from datetime import datetime
@@ -15,6 +16,7 @@ from datetime import datetime
 from .models import PaycomEmployee
 from .serializers import PaycomEmployeeSerializer
 from .filters import PaycomEmployeeFilter
+from .sftp_service import PaycomSFTPError
 
 logger = logging.getLogger(__name__)
 
@@ -114,13 +116,32 @@ class PaycomSyncViewSet(viewsets.ReadOnlyModelViewSet):
                 'timestamp': str(datetime.now())
             })
             
-        except Exception as e:
-            logger.error(f"Paycom sync failed via ViewSet action: {str(e)}")
+        except PaycomSFTPError as e:
+            logger.error(f"Paycom SFTP error via ViewSet action: {str(e)}")
             logger.error(f"Traceback: {traceback.format_exc()}")
             
             return Response({
                 'status': 'error',
                 'message': f'Sync failed: {str(e)}',
+                'error_type': 'SFTP_ERROR',
+                'timestamp': str(datetime.now())
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            logger.error(f"Paycom sync failed via ViewSet action: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            
+            # Include more error details for debugging
+            error_details = {
+                'error_type': type(e).__name__,
+                'message': str(e),
+                'traceback': traceback.format_exc() if settings.DEBUG else None
+            }
+            
+            return Response({
+                'status': 'error',
+                'message': f'Sync failed: {str(e)}',
+                'error_type': 'UNKNOWN_ERROR',
+                'details': error_details,
                 'timestamp': str(datetime.now())
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

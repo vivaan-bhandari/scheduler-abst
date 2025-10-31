@@ -5,12 +5,13 @@ Runs daily to get actual clock in/out times and hours worked
 
 import os
 import logging
+import traceback
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from django.utils import timezone
 from datetime import datetime, timedelta
 
-from paycom.sftp_service import PaycomSFTPService
+from paycom.sftp_service import PaycomSFTPService, PaycomSFTPError
 from paycom.time_tracking_parser import sync_paycom_time_tracking
 from paycom.facility_mapping import get_facility_mapping
 
@@ -106,7 +107,9 @@ class Command(BaseCommand):
         """Process time tracking files from SFTP"""
         try:
             # Initialize SFTP service
+            self.stdout.write('Initializing SFTP connection...')
             sftp_service = PaycomSFTPService()
+            self.stdout.write(f'Connecting to SFTP: {sftp_service.host}:{sftp_service.port}')
             
             # Calculate date range
             end_date = datetime.now()
@@ -177,8 +180,18 @@ class Command(BaseCommand):
                     self.stdout.write('='*50)
                     self._display_stats(total_stats)
                 
+        except PaycomSFTPError as e:
+            logger.error(f"SFTP error processing files: {e}")
+            self.stdout.write(
+                self.style.ERROR(f"SFTP Error: {str(e)}")
+            )
+            raise CommandError(f'SFTP error: {str(e)}')
         except Exception as e:
             logger.error(f"Error processing SFTP files: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            self.stdout.write(
+                self.style.ERROR(f"Error: {str(e)}")
+            )
             raise CommandError(f'Error processing SFTP files: {e}')
     
     def _find_time_tracking_files(self, sftp, start_date: datetime, end_date: datetime) -> list:
@@ -190,8 +203,19 @@ class Command(BaseCommand):
             from django.conf import settings
             remote_dir = getattr(settings, 'PAYCOM_SFTP_REMOTE_DIRECTORY', '/Outbound')
             
-            # List files in the SFTP remote directory
-            remote_files = sftp.listdir_attr(remote_dir)
+            logger.info(f"Listing files in remote directory: {remote_dir}")
+            
+            # Try to list files in the SFTP remote directory
+            try:
+                remote_files = sftp.listdir_attr(remote_dir)
+            except FileNotFoundError:
+                # Directory might not exist, try root directory
+                logger.warning(f"Directory {remote_dir} not found, trying root directory")
+                remote_dir = '/'
+                remote_files = sftp.listdir_attr(remote_dir)
+            except PermissionError as e:
+                logger.error(f"Permission denied accessing {remote_dir}: {e}")
+                raise
             
             for file_attr in remote_files:
                 filename = file_attr.filename
