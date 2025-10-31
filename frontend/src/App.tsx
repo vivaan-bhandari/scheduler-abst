@@ -11,6 +11,9 @@ import AccessManagement from './components/Auth/AccessManagement';
 import WelcomeScreen from './components/Auth/WelcomeScreen';
 import ResidentDetails from './components/Dashboard/ResidentDetails';
 import TestConnection from './components/TestConnection';
+import WeeklyADLEntryForm from './components/Dashboard/WeeklyADLEntryForm';
+import PaycomDashboard from './components/Paycom/PaycomDashboard';
+import { WeekProvider } from './contexts/WeekContext';
 
 import axios from 'axios';
 
@@ -22,6 +25,7 @@ interface User {
   last_name: string;
   role?: string;
   is_staff?: boolean;
+  is_superuser?: boolean;
 }
 
 function App() {
@@ -47,6 +51,7 @@ function App() {
   const handleLogin = (userData: User, authToken: string) => {
     setUser(userData);
     setToken(authToken);
+    axios.defaults.headers.common['Authorization'] = `Token ${authToken}`;
     setAuthMode('login');
     setShowWelcome(false);
   };
@@ -54,6 +59,7 @@ function App() {
   const handleRegister = (userData: User, authToken: string) => {
     setUser(userData);
     setToken(authToken);
+    axios.defaults.headers.common['Authorization'] = `Token ${authToken}`;
     setAuthMode('login');
     setShowWelcome(false);
   };
@@ -118,30 +124,34 @@ function App() {
 
   // Main authenticated app
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      <Routes>
-        <Route 
-          path="/" 
-          element={
-            <Dashboard 
-              user={user} 
-              onLogout={handleLogout}
-            />
-          } 
-        />
+    <WeekProvider>
+      <Box sx={{ display: 'flex' }}>
+        <CssBaseline />
+        <Routes>
+          <Route 
+            path="/" 
+            element={
+              <Dashboard 
+                user={user} 
+                onLogout={handleLogout}
+              />
+            } 
+          />
 
-        <Route path="/facility/:facilityId" element={<FacilityPage />} />
-        <Route path="/facility-section/:sectionId" element={<FacilitySectionDetails />} />
-        <Route 
-          path="/admin/access-management" 
-          element={<AccessManagement />} 
-        />
-        <Route path="/resident/:residentId" element={<ResidentDetails />} />
-        <Route path="/test" element={<TestConnection />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Box>
+          <Route path="/facility/:facilityId" element={<FacilityPage />} />
+          <Route path="/facility-section/:sectionId" element={<FacilitySectionDetails />} />
+          <Route 
+            path="/admin/access-management" 
+            element={<AccessManagement />} 
+          />
+          <Route path="/resident/:residentId" element={<ResidentDetails />} />
+          <Route path="/weekly-adl-entry" element={<WeeklyADLEntryForm />} />
+          <Route path="/paycom" element={<PaycomDashboard />} />
+          <Route path="/test" element={<TestConnection />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Box>
+    </WeekProvider>
   );
 }
 
