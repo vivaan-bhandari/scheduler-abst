@@ -245,7 +245,8 @@ class PaycomSFTPService:
                         char_codes = [f"{c}({ord(c)})" for c in password_str]
                         logger.info(f"Password characters: {' '.join(char_codes)}")
                         # Expected: Q(81) {(123) f(102) 3(51) H(72) }(125) b(98) G(71)
-                        logger.info(f"Password equals Q{f3H}bG: {password_str == 'Q{f3H}bG'}")
+                        expected_password = 'Q{f3H}bG'
+                        logger.info(f"Password equals expected: {password_str == expected_password}")
                     
                     ssh_client.connect(
                         hostname=self.host,
