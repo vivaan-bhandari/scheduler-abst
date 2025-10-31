@@ -91,22 +91,66 @@ class PaycomSFTPService:
                 password_str = str(self.password) if self.password else None
                 logger.info(f"Attempting password authentication for user: {self.username}")
                 logger.info(f"Password type: {type(password_str)}, Length: {len(password_str) if password_str else 0}")
-                logger.info(f"Password repr (first/last): {repr(password_str[:2]) if password_str else 'None'}...{repr(password_str[-2:]) if password_str and len(password_str) > 4 else ''}")
+                logger.info(f"Password full repr: {repr(password_str)}")
+                # Log each character's code point to check for hidden characters
+                if password_str:
+                    char_codes = [f"{c} ({ord(c)})" for c in password_str]
+                    logger.info(f"Password characters with codes: {' '.join(char_codes)}")
+                logger.info(f"Password bytes (utf-8): {repr(password_str.encode('utf-8') if password_str else b'')}")
+                logger.info(f"Password bytes (latin-1): {repr(password_str.encode('latin-1') if password_str else b'')}")
                 
                 # Try to connect - log more details
                 logger.info(f"Connecting to {self.host}:{self.port}...")
-                logger.info(f"Password bytes representation: {repr(password_str.encode('utf-8') if password_str else b'')}")
                 
-                ssh_client.connect(
-                    hostname=self.host,
-                    port=self.port,
-                    username=self.username,
-                    password=password_str,
-                    timeout=30,
-                    allow_agent=False,
-                    look_for_keys=False,
-                    banner_timeout=30
-                )
+                # Try multiple encoding methods if first fails
+                auth_success = False
+                last_error = None
+                
+                # Method 1: Direct string (default)
+                try:
+                    logger.info("Trying authentication method 1: Direct string")
+                    ssh_client.connect(
+                        hostname=self.host,
+                        port=self.port,
+                        username=self.username,
+                        password=password_str,
+                        timeout=30,
+                        allow_agent=False,
+                        look_for_keys=False,
+                        banner_timeout=30
+                    )
+                    auth_success = True
+                    logger.info("Authentication method 1 succeeded")
+                except paramiko.AuthenticationException as e1:
+                    last_error = e1
+                    logger.warning(f"Authentication method 1 failed: {e1}")
+                    
+                    # Method 2: Try with explicit UTF-8 encoding
+                    try:
+                        logger.info("Trying authentication method 2: Explicit UTF-8 bytes")
+                        ssh_client_new = paramiko.SSHClient()
+                        ssh_client_new.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                        password_bytes_utf8 = password_str.encode('utf-8').decode('utf-8')
+                        ssh_client_new.connect(
+                            hostname=self.host,
+                            port=self.port,
+                            username=self.username,
+                            password=password_bytes_utf8,
+                            timeout=30,
+                            allow_agent=False,
+                            look_for_keys=False,
+                            banner_timeout=30
+                        )
+                        ssh_client = ssh_client_new
+                        auth_success = True
+                        logger.info("Authentication method 2 succeeded")
+                    except paramiko.AuthenticationException as e2:
+                        logger.warning(f"Authentication method 2 failed: {e2}")
+                        last_error = e2
+                
+                if not auth_success:
+                    logger.error(f"All authentication methods failed. Last error: {last_error}")
+                    raise last_error
             
             # Create SFTP client
             sftp_client = ssh_client.open_sftp()
