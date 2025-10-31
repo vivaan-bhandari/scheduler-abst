@@ -181,3 +181,47 @@ def sync_status(request):
             'status': 'error',
             'message': f'Sync status check failed: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def run_migrations(request):
+    """
+    API endpoint to manually run migrations (for admin use)
+    """
+    try:
+        from django.core.management import call_command
+        from io import StringIO
+        import sys
+        
+        logger.info("Running migrations via API endpoint")
+        
+        # Capture migration output
+        output = StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = output
+        
+        try:
+            # Run migrations
+            call_command('migrate', verbosity=2, stdout=output)
+            migration_output = output.getvalue()
+            logger.info(f"Migration output: {migration_output}")
+        finally:
+            sys.stdout = old_stdout
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Migrations completed successfully',
+            'output': migration_output,
+            'timestamp': str(datetime.now())
+        })
+        
+    except Exception as e:
+        logger.error(f"Migration failed via API endpoint: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Migration failed: {str(e)}',
+            'timestamp': str(datetime.now())
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

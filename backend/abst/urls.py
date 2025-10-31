@@ -24,17 +24,22 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.common import no_append_slash
 from rest_framework.routers import DefaultRouter
-from adls.views import ADLViewSet
+from adls.views import ADLViewSet, WeeklyADLEntryViewSet, WeeklyADLSummaryViewSet
 from residents.views import ResidentViewSet, FacilityViewSet, FacilitySectionViewSet
 from users.views import UserViewSet, FacilityAccessViewSet
 from scheduling.views import (
     StaffViewSet, ShiftTemplateViewSet, ShiftViewSet, StaffAssignmentViewSet,
     StaffAvailabilityViewSet, AIInsightViewSet, AIRecommendationViewSet,
-    SchedulingDashboardViewSet
+    SchedulingDashboardViewSet, TimeTrackingViewSet, WeeklyHoursSummaryViewSet
+)
+from paycom.views import (
+    PaycomEmployeeViewSet, PaycomSyncLogViewSet, PaycomFileViewSet, PaycomSyncViewSet, run_migrations
 )
 
 router = DefaultRouter()
 router.register(r'adls', ADLViewSet)
+router.register(r'weekly-adls', WeeklyADLEntryViewSet)
+router.register(r'weekly-adl-summaries', WeeklyADLSummaryViewSet)
 router.register(r'residents', ResidentViewSet)
 router.register(r'users', UserViewSet)
 router.register(r'facilities', FacilityViewSet)
@@ -48,6 +53,12 @@ router.register(r'scheduling/availability', StaffAvailabilityViewSet)
 router.register(r'scheduling/ai-insights', AIInsightViewSet)
 router.register(r'scheduling/ai-recommendations', AIRecommendationViewSet)
 router.register(r'scheduling/dashboard', SchedulingDashboardViewSet, basename='scheduling-dashboard')
+router.register(r'scheduling/time-tracking', TimeTrackingViewSet)
+router.register(r'scheduling/weekly-hours-summary', WeeklyHoursSummaryViewSet)
+router.register(r'paycom/employees', PaycomEmployeeViewSet, basename='paycom-employees')
+router.register(r'paycom/sync-logs', PaycomSyncLogViewSet, basename='paycom-sync-logs')
+router.register(r'paycom/files', PaycomFileViewSet, basename='paycom-files')
+router.register(r'paycom/sync', PaycomSyncViewSet, basename='paycom-sync')
 
 @csrf_exempt
 def healthcheck(request):
@@ -68,5 +79,6 @@ urlpatterns = [
     path("", root_ok, name="root_ok"),  # Minimal root endpoint for Railway
     path("admin/", admin.site.urls),
     path("api/", include(router.urls)),
+    path("api/paycom/run-migrations/", run_migrations, name="run_migrations"),
     path("health/", healthcheck, name="healthcheck"),
 ]
