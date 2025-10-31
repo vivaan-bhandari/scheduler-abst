@@ -50,6 +50,17 @@ class PaycomSFTPService:
         if password_raw:
             # Convert to string and handle encoding issues
             password_str = str(password_raw).strip()
+            
+            # Railway bug: Automatically converts } to ) in environment variables
+            # Workaround: Check if password has ) where it should have }
+            # If Railway converted it, fix it back
+            if password_str and ')' in password_str and '{' in password_str:
+                # Check if it looks like Q{f3H)bG (should be Q{f3H}bG)
+                if password_str.startswith('Q{f3H') and password_str.endswith('bG'):
+                    # Fix the ) back to }
+                    password_str = password_str.replace(')', '}', 1)  # Replace only the first ) after {
+                    logger.warning(f"Railway converted } to ). Fixed password automatically.")
+            
             # Ensure we preserve special characters correctly
             self.password = password_str
             logger.debug(f"Password loaded: length={len(self.password)}, type={type(self.password)}")
@@ -223,45 +234,22 @@ class PaycomSFTPService:
                     # Ensure password is a string (handle special characters)
                     password_str = str(self.password) if self.password else None
                     logger.info(f"Attempting password authentication for user: {self.username}")
-                    logger.info(f"Password type: {type(password_str)}, Length: {len(password_str) if password_str else 0}")
-                    logger.info(f"Password full repr: {repr(password_str)}")
-                    # Log each character's code point to check for hidden characters
-                    if password_str:
-                        char_codes = [f"{c} ({ord(c)})" for c in password_str]
-                        logger.info(f"Password characters with codes: {' '.join(char_codes)}")
-                    logger.info(f"Password bytes (utf-8): {repr(password_str.encode('utf-8') if password_str else b'')}")
                     
-                    try:
-                        ssh_client.connect(
-                            hostname=self.host,
-                            port=self.port,
-                            username=self.username,
-                            password=password_str,
-                            timeout=30,
-                            allow_agent=False,
-                            look_for_keys=False,
-                            banner_timeout=30
-                        )
-                    except paramiko.AuthenticationException as auth_err:
-                        logger.error(f"Authentication failed in connect() method")
-                        logger.error(f"Password used: {repr(password_str)}")
-                        logger.error(f"Password bytes: {repr(password_str.encode('utf-8') if password_str else b'')}")
-                        if password_str:
-                            logger.error(f"Expected password bytes: {repr('Q{f3H}bG'.encode('utf-8'))}")
-                            logger.error(f"Password matches expected: {password_str == 'Q{f3H}bG'}")
-                            logger.error(f"Password equals check: {password_str.encode('utf-8') == 'Q{f3H}bG'.encode('utf-8')}")
-                        raise PaycomSFTPError(f"SFTP authentication failed. Password verification failed. Please check Railway environment variable PAYCOM_SFTP_PASSWORD. Error: {auth_err}")
+                    ssh_client.connect(
+                        hostname=self.host,
+                        port=self.port,
+                        username=self.username,
+                        password=password_str,
+                        timeout=30,
+                        allow_agent=False,
+                        look_for_keys=False
+                    )
                 
                 # Create SFTP client
                 sftp_client = ssh_client.open_sftp()
                 
                 yield sftp_client
                 
-            except PaycomSFTPError:
-                raise  # Re-raise our custom errors
-            except paramiko.AuthenticationException as e:
-                logger.error(f"SFTP authentication failed in connect(): {e}")
-                raise PaycomSFTPError(f"SFTP authentication failed. Error: {e}")
             except Exception as e:
                 logger.error(f"Failed to create SFTP connection: {e}")
                 raise PaycomSFTPError(f"SFTP connection failed: {e}")
