@@ -44,9 +44,11 @@ try:
         PaycomEmployeeViewSet, PaycomSyncLogViewSet, PaycomFileViewSet, PaycomSyncViewSet
     )
     PAYCOM_AVAILABLE = True
+    logger.info("Paycom ViewSets imported successfully")
 except Exception as e:
     # If Paycom app is not available (e.g., migrations not run), disable Paycom URLs
     PAYCOM_AVAILABLE = False
+    logger.warning(f"Paycom ViewSets not available: {e}")
     PaycomEmployeeViewSet = None
     PaycomSyncLogViewSet = None
     PaycomFileViewSet = None
@@ -142,5 +144,10 @@ if PAYCOM_AVAILABLE:
     try:
         from paycom import urls as paycom_urls
         urlpatterns.append(path("api/paycom/", include(paycom_urls.urlpatterns)))
+        logger.info("Paycom URLs included successfully")
     except Exception as e:
         logger.warning(f"Could not include Paycom URLs: {e}")
+        import traceback
+        logger.warning(f"Traceback: {traceback.format_exc()}")
+else:
+    logger.warning("Paycom URLs not included because PAYCOM_AVAILABLE is False")
