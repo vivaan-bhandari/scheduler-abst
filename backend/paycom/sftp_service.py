@@ -1,0 +1,358 @@
+"""
+SFTP service for connecting to Paycom and downloading employee reports
+"""
+
+import os
+import logging
+import tempfile
+from datetime import datetime
+from typing import List, Dict, Optional, Tuple
+import paramiko
+from django.conf import settings
+from django.utils import timezone
+from .models import PaycomSyncLog, PaycomFile
+
+logger = logging.getLogger(__name__)
+
+
+class PaycomSFTPError(Exception):
+    """Custom exception for Paycom SFTP operations"""
+    pass
+
+
+class PaycomSFTPService:
+    """Service for handling SFTP operations with Paycom"""
+    
+    def __init__(self):
+        self.host = getattr(settings, 'PAYCOM_SFTP_HOST', None)
+        self.port = getattr(settings, 'PAYCOM_SFTP_PORT', 22)
+        self.username = getattr(settings, 'PAYCOM_SFTP_USERNAME', None)
+        self.password = getattr(settings, 'PAYCOM_SFTP_PASSWORD', None)
+        self.private_key_path = getattr(settings, 'PAYCOM_SFTP_PRIVATE_KEY_PATH', None)
+        self.remote_directory = getattr(settings, 'PAYCOM_SFTP_REMOTE_DIRECTORY', '/')
+        self.local_directory = getattr(settings, 'PAYCOM_SFTP_LOCAL_DIRECTORY', None)
+        
+        if not self.host or not self.username:
+            raise PaycomSFTPError("SFTP credentials not configured. Please set PAYCOM_SFTP_HOST and PAYCOM_SFTP_USERNAME.")
+        
+        if not self.password and not self.private_key_path:
+            raise PaycomSFTPError("Either password or private key must be provided for SFTP authentication.")
+    
+    def _create_connection(self) -> paramiko.SFTPClient:
+        """Create and return an SFTP connection"""
+        try:
+            # Create SSH client
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            # Connect using password or private key
+            if self.private_key_path and os.path.exists(self.private_key_path):
+                private_key = paramiko.RSAKey.from_private_key_file(self.private_key_path)
+                ssh_client.connect(
+                    hostname=self.host,
+                    port=self.port,
+                    username=self.username,
+                    pkey=private_key,
+                    timeout=30
+                )
+            else:
+                ssh_client.connect(
+                    hostname=self.host,
+                    port=self.port,
+                    username=self.username,
+                    password=self.password,
+                    timeout=30
+                )
+            
+            # Create SFTP client
+            sftp_client = ssh_client.open_sftp()
+            return sftp_client
+            
+        except Exception as e:
+            logger.error(f"Failed to create SFTP connection: {e}")
+            raise PaycomSFTPError(f"Failed to connect to SFTP server: {e}")
+    
+    def connect(self):
+        """Return a context manager for SFTP connection"""
+        from contextlib import contextmanager
+        
+        @contextmanager
+        def sftp_connection():
+            ssh_client = None
+            sftp_client = None
+            try:
+                # Create SSH client
+                ssh_client = paramiko.SSHClient()
+                ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                
+                # Connect using password or private key
+                if self.private_key_path and os.path.exists(self.private_key_path):
+                    private_key = paramiko.RSAKey.from_private_key_file(self.private_key_path)
+                    ssh_client.connect(
+                        hostname=self.host,
+                        port=self.port,
+                        username=self.username,
+                        pkey=private_key,
+                        timeout=30
+                    )
+                else:
+                    ssh_client.connect(
+                        hostname=self.host,
+                        port=self.port,
+                        username=self.username,
+                        password=self.password,
+                        timeout=30
+                    )
+                
+                # Create SFTP client
+                sftp_client = ssh_client.open_sftp()
+                
+                yield sftp_client
+                
+            except Exception as e:
+                logger.error(f"Failed to create SFTP connection: {e}")
+                raise PaycomSFTPError(f"SFTP connection failed: {e}")
+            finally:
+                # Clean up connections
+                if sftp_client:
+                    sftp_client.close()
+                if ssh_client:
+                    ssh_client.close()
+        
+        return sftp_connection()
+    
+    def _get_local_directory(self) -> str:
+        """Get or create local directory for downloaded files"""
+        if self.local_directory:
+            local_dir = self.local_directory
+        else:
+            local_dir = os.path.join(settings.MEDIA_ROOT, 'paycom_reports')
+        
+        os.makedirs(local_dir, exist_ok=True)
+        return local_dir
+    
+    def list_remote_files(self, file_pattern: str = "*.csv") -> List[Dict[str, any]]:
+        """List files in the remote directory matching the pattern"""
+        try:
+            sftp = self._create_connection()
+            
+            try:
+                files = []
+                for file_attr in sftp.listdir_attr(self.remote_directory):
+                    if file_attr.filename.endswith('.csv'):
+                        files.append({
+                            'filename': file_attr.filename,
+                            'size': file_attr.st_size,
+                            'modified_time': datetime.fromtimestamp(file_attr.st_mtime),
+                            'is_directory': file_attr.st_mode & 0o040000 != 0
+                        })
+                
+                return files
+                
+            finally:
+                sftp.close()
+                
+        except Exception as e:
+            logger.error(f"Failed to list remote files: {e}")
+            raise PaycomSFTPError(f"Failed to list files: {e}")
+    
+    def download_file(self, remote_filename: str, local_filename: str = None, sftp_client=None) -> str:
+        """Download a file from SFTP server"""
+        try:
+            # Use provided SFTP client or create new connection
+            if sftp_client is None:
+                sftp = self._create_connection()
+                should_close = True
+            else:
+                sftp = sftp_client
+                should_close = False
+            
+            try:
+                # Generate local filename if not provided
+                if not local_filename:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    local_filename = f"{timestamp}_{remote_filename}"
+                
+                # Get local directory
+                local_dir = self._get_local_directory()
+                local_path = os.path.join(local_dir, local_filename)
+                
+                # Download file
+                remote_path = f"{self.remote_directory.rstrip('/')}/{remote_filename}"
+                sftp.get(remote_path, local_path)
+                
+                logger.info(f"Downloaded {remote_filename} to {local_path}")
+                return local_path
+                
+            finally:
+                if should_close:
+                    sftp.close()
+                
+        except Exception as e:
+            logger.error(f"Failed to download file {remote_filename}: {e}")
+            raise PaycomSFTPError(f"Failed to download file: {e}")
+    
+    def download_all_reports(self, sync_log: PaycomSyncLog) -> List[PaycomFile]:
+        """Download all employee reports from Paycom SFTP"""
+        downloaded_files = []
+        
+        try:
+            # Create a single SFTP connection for all operations
+            sftp = self._create_connection()
+            
+            try:
+                # List all .csv files in remote directory
+                files = []
+                for file_attr in sftp.listdir_attr(self.remote_directory):
+                    if file_attr.filename.endswith('.csv'):
+                        files.append({
+                            'filename': file_attr.filename,
+                            'size': file_attr.st_size,
+                            'modified_time': datetime.fromtimestamp(file_attr.st_mtime),
+                            'is_directory': file_attr.st_mode & 0o040000 != 0
+                        })
+                
+                if not files:
+                    logger.warning("No .csv files found in remote directory")
+                    return downloaded_files
+                
+                # Download each file using the same connection
+                for file_info in files:
+                    if file_info['is_directory']:
+                        continue
+                    
+                    try:
+                        # Download file using the existing connection
+                        local_dir = self._get_local_directory()
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        local_filename = f"{timestamp}_{file_info['filename']}"
+                        local_path = os.path.join(local_dir, local_filename)
+                        
+                        # Download file
+                        remote_path = f"{self.remote_directory.rstrip('/')}/{file_info['filename']}"
+                        sftp.get(remote_path, local_path)
+                        
+                        logger.info(f"Downloaded {file_info['filename']} to {local_path}")
+                        
+                        # Determine file type based on filename
+                        file_type = self._determine_file_type(file_info['filename'])
+                        
+                        # Create PaycomFile record
+                        paycom_file = PaycomFile.objects.create(
+                            sync_log=sync_log,
+                            filename=file_info['filename'],
+                            file_path=local_path,
+                            file_size=file_info['size'],
+                            file_type=file_type,
+                            status='downloaded'
+                        )
+                        
+                        downloaded_files.append(paycom_file)
+                        sync_log.files_processed += 1
+                        sync_log.files_successful += 1
+                        sync_log.save()
+                        
+                        logger.info(f"Successfully downloaded and recorded {file_info['filename']}")
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to download {file_info['filename']}: {e}")
+                        sync_log.files_failed += 1
+                        sync_log.save()
+                        
+                        # Create failed file record
+                        paycom_file = PaycomFile.objects.create(
+                            sync_log=sync_log,
+                            filename=file_info['filename'],
+                            file_path='',
+                            file_size=0,
+                            file_type='unknown',
+                            status='failed',
+                            error_message=str(e)
+                        )
+                        downloaded_files.append(paycom_file)
+                
+                return downloaded_files
+                
+            finally:
+                sftp.close()
+            
+        except Exception as e:
+            logger.error(f"Failed to download reports: {e}")
+            sync_log.status = 'failed'
+            sync_log.error_message = str(e)
+            sync_log.completed_at = timezone.now()
+            sync_log.save()
+            raise PaycomSFTPError(f"Failed to download reports: {e}")
+    
+    def _determine_file_type(self, filename: str) -> str:
+        """Determine the type of report based on filename"""
+        filename_lower = filename.lower()
+        
+        if 'employee_directory' in filename_lower:
+            return 'employee_directory'
+        elif 'employee_dates' in filename_lower:
+            return 'employee_dates'
+        elif 'employee_payees' in filename_lower:
+            return 'employee_payees'
+        else:
+            return 'unknown'
+    
+    def test_connection(self) -> bool:
+        """Test SFTP connection"""
+        try:
+            sftp = self._create_connection()
+            sftp.close()
+            return True
+        except Exception as e:
+            logger.error(f"SFTP connection test failed: {e}")
+            return False
+
+
+def create_sync_log(report_type: str = 'all') -> PaycomSyncLog:
+    """Create a new sync log entry"""
+    sync_id = f"sync_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    
+    return PaycomSyncLog.objects.create(
+        sync_id=sync_id,
+        report_type=report_type,
+        status='started'
+    )
+
+
+def sync_paycom_data(report_type: str = 'all') -> PaycomSyncLog:
+    """Main function to sync all Paycom data"""
+    logger.info(f"Starting Paycom sync for report type: {report_type}")
+    
+    # Create sync log
+    sync_log = create_sync_log(report_type)
+    
+    try:
+        # Initialize SFTP service
+        sftp_service = PaycomSFTPService()
+        
+        # Test connection
+        if not sftp_service.test_connection():
+            raise PaycomSFTPError("SFTP connection test failed")
+        
+        # Update sync log
+        sync_log.status = 'in_progress'
+        sync_log.save()
+        
+        # Download all reports
+        downloaded_files = sftp_service.download_all_reports(sync_log)
+        
+        # Update sync log
+        sync_log.status = 'completed'
+        sync_log.completed_at = timezone.now()
+        sync_log.save()
+        
+        logger.info(f"Paycom sync completed successfully. Downloaded {len(downloaded_files)} files.")
+        return sync_log
+        
+    except Exception as e:
+        logger.error(f"Paycom sync failed: {e}")
+        sync_log.status = 'failed'
+        sync_log.error_message = str(e)
+        sync_log.completed_at = timezone.now()
+        sync_log.save()
+        raise
