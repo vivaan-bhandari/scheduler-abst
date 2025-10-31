@@ -27,7 +27,13 @@ class PaycomSFTPService:
         self.host = getattr(settings, 'PAYCOM_SFTP_HOST', None)
         self.port = getattr(settings, 'PAYCOM_SFTP_PORT', 22)
         self.username = getattr(settings, 'PAYCOM_SFTP_USERNAME', None)
-        self.password = getattr(settings, 'PAYCOM_SFTP_PASSWORD', None)
+        
+        # Get password and ensure it's properly handled (trim whitespace, convert to string)
+        password_raw = getattr(settings, 'PAYCOM_SFTP_PASSWORD', None)
+        if password_raw:
+            self.password = str(password_raw).strip()
+        else:
+            self.password = None
         self.private_key_path = getattr(settings, 'PAYCOM_SFTP_PRIVATE_KEY_PATH', None)
         self.remote_directory = getattr(settings, 'PAYCOM_SFTP_REMOTE_DIRECTORY', '/')
         self.local_directory = getattr(settings, 'PAYCOM_SFTP_LOCAL_DIRECTORY', None)
@@ -37,6 +43,10 @@ class PaycomSFTPService:
         
         if not self.password and not self.private_key_path:
             raise PaycomSFTPError("Either password or private key must be provided for SFTP authentication.")
+        
+        # Log connection details (without exposing password)
+        logger.info(f"Initializing SFTP connection to {self.host}:{self.port} as {self.username}")
+        logger.info(f"Password provided: {'Yes' if self.password else 'No'}, Length: {len(self.password) if self.password else 0}")
     
     def _create_connection(self) -> paramiko.SFTPClient:
         """Create and return an SFTP connection"""
@@ -56,20 +66,35 @@ class PaycomSFTPService:
                     timeout=30
                 )
             else:
+                # Ensure password is a string (handle special characters)
+                password_str = str(self.password) if self.password else None
+                logger.info(f"Attempting password authentication for user: {self.username}")
+                
                 ssh_client.connect(
                     hostname=self.host,
                     port=self.port,
                     username=self.username,
-                    password=self.password,
-                    timeout=30
+                    password=password_str,
+                    timeout=30,
+                    allow_agent=False,
+                    look_for_keys=False
                 )
             
             # Create SFTP client
             sftp_client = ssh_client.open_sftp()
+            logger.info("SFTP connection established successfully")
             return sftp_client
             
+        except paramiko.AuthenticationException as e:
+            logger.error(f"SFTP authentication failed: {e}")
+            logger.error(f"Credentials used - Host: {self.host}, Username: {self.username}, Password length: {len(self.password) if self.password else 0}")
+            raise PaycomSFTPError(f"SFTP authentication failed. Please verify your credentials. Error: {e}")
+        except paramiko.SSHException as e:
+            logger.error(f"SFTP SSH error: {e}")
+            raise PaycomSFTPError(f"SFTP connection failed: {e}")
         except Exception as e:
             logger.error(f"Failed to create SFTP connection: {e}")
+            logger.error(f"Error type: {type(e).__name__}")
             raise PaycomSFTPError(f"Failed to connect to SFTP server: {e}")
     
     def connect(self):
@@ -96,12 +121,18 @@ class PaycomSFTPService:
                         timeout=30
                     )
                 else:
+                    # Ensure password is a string (handle special characters)
+                    password_str = str(self.password) if self.password else None
+                    logger.info(f"Attempting password authentication for user: {self.username}")
+                    
                     ssh_client.connect(
                         hostname=self.host,
                         port=self.port,
                         username=self.username,
-                        password=self.password,
-                        timeout=30
+                        password=password_str,
+                        timeout=30,
+                        allow_agent=False,
+                        look_for_keys=False
                     )
                 
                 # Create SFTP client
