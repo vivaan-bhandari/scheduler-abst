@@ -186,8 +186,12 @@ class Command(BaseCommand):
         files = []
         
         try:
-            # List files in the SFTP Outbound directory
-            remote_files = sftp.listdir_attr('/Outbound')
+            # Get remote directory from settings, default to /Outbound for Paycom
+            from django.conf import settings
+            remote_dir = getattr(settings, 'PAYCOM_SFTP_REMOTE_DIRECTORY', '/Outbound')
+            
+            # List files in the SFTP remote directory
+            remote_files = sftp.listdir_attr(remote_dir)
             
             for file_attr in remote_files:
                 filename = file_attr.filename
@@ -199,7 +203,7 @@ class Command(BaseCommand):
                     if start_date <= file_date <= end_date:
                         files.append({
                             'filename': filename,
-                            'filepath': filename,  # Just the filename, not the full path
+                            'filepath': f"{remote_dir.rstrip('/')}/{filename}",  # Full remote path
                             'date': file_date,
                             'size': file_attr.st_size
                         })
