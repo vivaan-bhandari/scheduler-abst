@@ -24,7 +24,24 @@ class PaycomSFTPService:
     """Service for handling SFTP operations with Paycom"""
     
     def __init__(self):
-        self.host = getattr(settings, 'PAYCOM_SFTP_HOST', None)
+        # Get host and strip protocol prefix if present (e.g., sftp://hostname -> hostname)
+        host_raw = getattr(settings, 'PAYCOM_SFTP_HOST', None)
+        if host_raw:
+            host_str = str(host_raw).strip()
+            # Remove sftp:// or ssh:// prefix if present
+            if host_str.startswith('sftp://'):
+                self.host = host_str[7:]  # Remove 'sftp://'
+            elif host_str.startswith('ssh://'):
+                self.host = host_str[6:]  # Remove 'ssh://'
+            elif host_str.startswith('//'):
+                self.host = host_str[2:]  # Remove '//'
+            else:
+                self.host = host_str
+            # Remove trailing slash if present
+            self.host = self.host.rstrip('/')
+        else:
+            self.host = None
+            
         self.port = getattr(settings, 'PAYCOM_SFTP_PORT', 22)
         self.username = getattr(settings, 'PAYCOM_SFTP_USERNAME', None)
         
