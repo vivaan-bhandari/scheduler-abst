@@ -23,13 +23,24 @@ class PaycomEmployeeViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet for Paycom employee data
     """
-    queryset = PaycomEmployee.objects.all()
     serializer_class = PaycomEmployeeSerializer
     filterset_class = PaycomEmployeeFilter
+    
+    def get_queryset(self):
+        # Check if PaycomEmployee table exists
+        try:
+            return PaycomEmployee.objects.all()
+        except Exception:
+            # Table doesn't exist yet (migrations not run)
+            return PaycomEmployee.objects.none()
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        try:
+            queryset = super().get_queryset()
+        except Exception:
+            # Table doesn't exist yet
+            return PaycomEmployee.objects.none()
         
         # Apply week filtering if provided
         week_start_date = self.request.query_params.get('week_start_date')
@@ -43,11 +54,17 @@ class PaycomEmployeeViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'])
     def facility_options(self, request):
         """Get list of unique facilities from Paycom employees"""
-        # Get unique location descriptions as facilities
-        facilities = PaycomEmployee.objects.values_list('location_description', flat=True).distinct().exclude(location_description='')
-        return Response({
-            'facilities': list(facilities)
-        })
+        try:
+            # Get unique location descriptions as facilities
+            facilities = PaycomEmployee.objects.values_list('location_description', flat=True).distinct().exclude(location_description='')
+            return Response({
+                'facilities': list(facilities)
+            })
+        except Exception:
+            # Table doesn't exist yet
+            return Response({
+                'facilities': []
+            })
     
     @action(detail=False, methods=['get'])
     def scheduling_recommendations(self, request):
