@@ -28,6 +28,7 @@ import {
   Upload,
   List,
   Person,
+  Sync as SyncIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -37,7 +38,10 @@ import FacilityAccessRequest from '../Auth/FacilityAccessRequest';
 import AccessManagement from '../Auth/AccessManagement';
 import CaregivingSummaryChart from './CaregivingSummaryChart';
 import SchedulingDashboard from '../Scheduling/SchedulingDashboard';
+import ADLAnalytics from './ADLAnalytics';
+import PaycomDashboard from '../Paycom/PaycomDashboard';
 import { API_BASE_URL } from '../../config';
+import { useWeek } from '../../contexts/WeekContext';
 
 const Dashboard = ({ user, onLogout }) => {
   const navigate = useNavigate();
@@ -48,7 +52,24 @@ const Dashboard = ({ user, onLogout }) => {
   const [hasFacilityAccess, setHasFacilityAccess] = useState(true);
   const [userAccess, setUserAccess] = useState([]);
   const [selectedFacility, setSelectedFacility] = useState(null);
+  
+  // Global week selection state
+  const { selectedWeek, setSelectedWeek } = useWeek();
   const [selectedFacilityName, setSelectedFacilityName] = useState('');
+
+  // Use the getWeekLabel from WeekContext instead of defining our own
+  const { getWeekLabel } = useWeek();
+
+  // Helper function to ensure we always use Monday dates
+  const normalizeToMonday = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const dayOfWeek = date.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const monday = new Date(date);
+    monday.setDate(date.getDate() - daysToMonday);
+    return monday.toISOString().split('T')[0];
+  };
 
   useEffect(() => {
     fetchUserAccess();
@@ -93,16 +114,19 @@ const Dashboard = ({ user, onLogout }) => {
   const handleTabChange = (event, newValue) => {
     setTab(newValue);
     
-    // Reset facility selection when switching to Facility tab
-    if (newValue === 0) {
-      setSelectedFacility(null);
-      setSelectedFacilityName('');
-    }
+    // Note: Removed facility reset logic to preserve user selection
+    // across different tabs
   };
 
   const handleFacilityChange = (facilityId, facilityName) => {
+    console.log('🔄 Dashboard: Facility changed to', facilityId, facilityName);
     setSelectedFacility(facilityId);
     setSelectedFacilityName(facilityName);
+    
+    // Force a small delay to ensure state updates are processed
+    setTimeout(() => {
+      console.log('✅ Dashboard: Facility state updated', { facilityId, facilityName });
+    }, 100);
   };
 
   // Show access request prompt if user has no facility access
@@ -202,29 +226,111 @@ const Dashboard = ({ user, onLogout }) => {
         </MenuItem>
       </Menu>
 
-      <Container maxWidth="xl" sx={{ mt: 3 }}>
+      <Container maxWidth={false} sx={{ mt: 3 }}>
+
+        {/* Global Week Selector */}
+        <Paper sx={{ p: 2, mb: 3, bgcolor: 'primary.50', border: '1px solid', borderColor: 'primary.200' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="h6" color="primary.main">
+                📅 Current Week: {getWeekLabel(selectedWeek)} (Debug: {selectedWeek})
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                All data below is filtered for this week (Monday to Sunday)
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  const currentMonday = new Date(selectedWeek);
+                  currentMonday.setDate(currentMonday.getDate() - 7);
+                  setSelectedWeek(currentMonday.toISOString().split('T')[0]);
+                }}
+              >
+                ← Previous Week
+              </Button>
+              <input
+                type="date"
+                value={selectedWeek}
+                onChange={(e) => {
+                  const normalizedMonday = normalizeToMonday(e.target.value);
+                  setSelectedWeek(normalizedMonday);
+                }}
+                style={{
+                  padding: '8px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              />
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  const currentMonday = new Date(selectedWeek);
+                  currentMonday.setDate(currentMonday.getDate() + 7);
+                  setSelectedWeek(currentMonday.toISOString().split('T')[0]);
+                }}
+              >
+                Next Week →
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => {
+                  setSelectedWeek('2025-07-21');
+                }}
+                sx={{ ml: 1 }}
+              >
+                Current Week
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
 
         {/* Caregiving Summary Chart */}
         <CaregivingSummaryChart 
-          title={selectedFacility ? `Caregiving Time Summary - ${selectedFacilityName}` : "Caregiving Time Summary - All Facilities"}
+          key={`main-chart-${selectedFacility}-${selectedWeek}-${tab}`}
+          title={selectedFacility ? `Caregiving Time Summary - ${selectedFacilityName} - ${getWeekLabel(selectedWeek)}` : `Caregiving Time Summary - All Facilities - ${getWeekLabel(selectedWeek)}`}
           endpoint={`${API_BASE_URL}/api/adls/caregiving_summary/`}
-          queryParams={selectedFacility ? { facility_id: selectedFacility } : {}}
+          queryParams={{ 
+            ...(selectedFacility ? { facility_id: selectedFacility } : {}),
+            week_start_date: selectedWeek 
+          }}
         />
+        {console.log('📊 Dashboard: Rendering chart with params:', { 
+          selectedFacility, 
+          selectedWeek, 
+          tab, 
+          facilityName: selectedFacilityName,
+          queryParams: { 
+            ...(selectedFacility ? { facility_id: selectedFacility } : {}),
+            week_start_date: selectedWeek 
+          }
+        })}
 
         {/* Main Content Tabs */}
         <Paper sx={{ width: '100%' }}>
           <Tabs value={tab} onChange={handleTabChange} sx={{ mb: 3 }}>
             <Tab label="Facility" />
             <Tab label="Scheduling" />
-            {user.is_staff || user.role === 'admin' || user.role === 'superadmin' ? (
+            <Tab label="ADL Analytics" />
+            {user.is_staff || user.is_superuser || user.role === 'admin' || user.role === 'superadmin' ? (
+              <Tab label="Paycom" />
+            ) : null}
+            {user.is_staff || user.is_superuser || user.role === 'admin' || user.role === 'superadmin' ? (
               <Tab label="Admin" />
             ) : null}
           </Tabs>
 
           <Box sx={{ p: 3 }}>
-            {tab === 0 && <FacilityList />}
-            {tab === 1 && <SchedulingDashboard user={user} onLogout={onLogout} onFacilityChange={handleFacilityChange} />}
-            {tab === 2 && (user.is_staff || user.role === 'admin' || user.role === 'superadmin') && <AccessManagement />}
+            {tab === 0 && <FacilityList key={`facility-list-${selectedWeek}`} />}
+            {tab === 1 && <SchedulingDashboard key={`scheduling-${selectedFacility}-${selectedWeek}`} user={user} onLogout={onLogout} onFacilityChange={handleFacilityChange} initialFacilityId={selectedFacility} initialFacilityName={selectedFacilityName} />}
+            {tab === 2 && <ADLAnalytics key={`adl-analytics-${selectedFacility}-${selectedWeek}`} facilityId={selectedFacility} />}
+            {tab === 3 && (user.is_staff || user.is_superuser || user.role === 'admin' || user.role === 'superadmin') && <PaycomDashboard key={`paycom-${selectedWeek}`} />}
+            {tab === 4 && (user.is_staff || user.is_superuser || user.role === 'admin' || user.role === 'superadmin') && <AccessManagement key={`admin-${selectedWeek}`} />}
           </Box>
         </Paper>
       </Container>
