@@ -54,12 +54,15 @@ class PaycomSFTPService:
             # Railway bug: Automatically converts } to ) in environment variables
             # Workaround: Check if password has ) where it should have }
             # If Railway converted it, fix it back
+            logger.info(f"Password before workaround - repr: {repr(password_str)}")
             if password_str and ')' in password_str and '{' in password_str:
                 # Check if it looks like Q{f3H)bG (should be Q{f3H}bG)
                 if password_str.startswith('Q{f3H') and password_str.endswith('bG'):
                     # Fix the ) back to }
                     password_str = password_str.replace(')', '}', 1)  # Replace only the first ) after {
                     logger.warning("Railway converted } to ). Fixed password automatically.")
+                    logger.info(f"Password after workaround - repr: {repr(password_str)}")
+            logger.info(f"Final password in __init__ - repr: {repr(password_str)}")
             
             # Ensure we preserve special characters correctly
             self.password = password_str
@@ -234,6 +237,15 @@ class PaycomSFTPService:
                     # Ensure password is a string (handle special characters)
                     password_str = str(self.password) if self.password else None
                     logger.info(f"Attempting password authentication for user: {self.username}")
+                    logger.info(f"Password in connect() - type: {type(password_str)}, length: {len(password_str) if password_str else 0}")
+                    logger.info(f"Password in connect() - repr: {repr(password_str)}")
+                    
+                    # Log character codes to verify password is correct
+                    if password_str:
+                        char_codes = [f"{c}({ord(c)})" for c in password_str]
+                        logger.info(f"Password characters: {' '.join(char_codes)}")
+                        # Expected: Q(81) {(123) f(102) 3(51) H(72) }(125) b(98) G(71)
+                        logger.info(f"Password equals Q{f3H}bG: {password_str == 'Q{f3H}bG'}")
                     
                     ssh_client.connect(
                         hostname=self.host,
@@ -242,7 +254,8 @@ class PaycomSFTPService:
                         password=password_str,
                         timeout=30,
                         allow_agent=False,
-                        look_for_keys=False
+                        look_for_keys=False,
+                        banner_timeout=30
                     )
                 
                 # Create SFTP client
