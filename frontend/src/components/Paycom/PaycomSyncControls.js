@@ -22,7 +22,8 @@ import {
   CheckCircle as CheckIcon,
   Error as ErrorIcon,
   Info as InfoIcon,
-  Schedule as ScheduleIcon
+  Schedule as ScheduleIcon,
+  Storage as StorageIcon
 } from '@mui/icons-material';
 import api from '../../services/api';
 
@@ -32,6 +33,8 @@ const PaycomSyncControls = () => {
   const [syncLogs, setSyncLogs] = useState([]);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [migrating, setMigrating] = useState(false);
+  const [migrationResult, setMigrationResult] = useState(null);
 
   useEffect(() => {
     fetchSyncLogs();
@@ -77,6 +80,38 @@ const PaycomSyncControls = () => {
       setError(`Failed to start sync: ${err.message || err.response?.data?.detail || 'Please try again.'}`);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleRunMigrations = async () => {
+    try {
+      setMigrating(true);
+      setError(null);
+      setSuccess(null);
+      setMigrationResult(null);
+
+      console.log('Running migrations...');
+      const response = await api.post('/api/paycom/run-migrations/');
+
+      console.log('Migration response:', response);
+      setMigrationResult(response.data);
+      setSuccess('Migrations completed successfully! Please refresh the page.');
+      
+      // Refresh the page after 2 seconds to show updated admin panel
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+
+    } catch (err) {
+      console.error('Error running migrations:', err);
+      console.error('Error details:', err.response?.data);
+      const errorMsg = err.response?.data?.message || err.response?.data?.error_details || err.message || 'Please try again.';
+      setError(`Failed to run migrations: ${errorMsg}`);
+      if (err.response?.data) {
+        setMigrationResult(err.response.data);
+      }
+    } finally {
+      setMigrating(false);
     }
   };
 
@@ -146,7 +181,7 @@ const PaycomSyncControls = () => {
             </Alert>
           )}
 
-          <Box display="flex" gap={2} alignItems="center">
+          <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
             <Button
               variant="contained"
               startIcon={syncing ? <CircularProgress size={20} /> : <DownloadIcon />}
@@ -155,6 +190,16 @@ const PaycomSyncControls = () => {
               color="primary"
             >
               {syncing ? 'Syncing...' : 'Sync Now'}
+            </Button>
+
+            <Button
+              variant="outlined"
+              startIcon={migrating ? <CircularProgress size={20} /> : <StorageIcon />}
+              onClick={handleRunMigrations}
+              disabled={migrating}
+              color="secondary"
+            >
+              {migrating ? 'Running Migrations...' : 'Run Database Migrations'}
             </Button>
 
             {latestSync && (
@@ -194,6 +239,24 @@ const PaycomSyncControls = () => {
                   </Typography>
                 </Grid>
               </Grid>
+            </Paper>
+          )}
+
+          {migrationResult && (
+            <Paper sx={{ mt: 2, p: 2, bgcolor: migrationResult.status === 'success' ? 'success.light' : 'error.light' }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Migration Result: {migrationResult.status === 'success' ? '✓ Success' : '✗ Error'}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                {migrationResult.message}
+              </Typography>
+              {migrationResult.output && (
+                <Paper sx={{ p: 1, bgcolor: 'background.paper', maxHeight: 200, overflow: 'auto', mt: 1 }}>
+                  <Typography variant="caption" component="pre" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                    {migrationResult.output}
+                  </Typography>
+                </Paper>
+              )}
             </Paper>
           )}
         </CardContent>
