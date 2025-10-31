@@ -1,0 +1,85 @@
+WEEKLY PAYCOM + ADL SCHEDULING WORKFLOW
+=========================================
+
+MONDAY - THURSDAY: Data Collection Phase
+┌─────────────────────────────────────────────────────────┐
+│ MONDAY    │ TUESDAY   │ WEDNESDAY │ THURSDAY             │
+│           │           │           │                      │
+│ Start     │ Begin ADL │ Continue  │ Complete ADL         │
+│ Week      │ Entry     │ ADL Entry │ Entry & Review       │
+│           │ (Next)    │ (Next)    │ (Next)               │
+└─────────────────────────────────────────────────────────┘
+                              ↓
+                    ADL Data Ready for Next Week
+
+FRIDAY: Schedule Finalization Day
+┌─────────────────────────────────────────────────────────┐
+│ 2:00 PM   │ 3:00 PM   │ 4:00 PM   │ 5:00 PM             │
+│           │           │           │                      │
+│ Paycom    │ AI        │ Schedule  │ Schedule             │
+│ Sync      │ Generate  │ Create    │ Finalize             │
+│           │ Recs      │ Shifts    │ & Lock               │
+└─────────────────────────────────────────────────────────┘
+                              ↓
+                    Next Week's Schedule Ready
+
+WEEKEND: Distribution Phase
+┌─────────────────────────────────────────────────────────┐
+│ SATURDAY  │ SUNDAY                                       │
+│           │                                              │
+│ Staff     │ Last-Minute                                  │
+│ Review    │ Adjustments                                  │
+│ Schedule  │ (if needed)                                  │
+└─────────────────────────────────────────────────────────┘
+                              ↓
+                    Staff Ready for Next Week
+
+DATA FLOW:
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   PAYCOM    │───▶│   ADL DATA  │───▶│   AI RECS   │
+│ Employee    │    │ Resident    │    │ Staffing    │
+│ Data        │    │ Care Hours  │    │ Needs       │
+└─────────────┘    └─────────────┘    └─────────────┘
+       │                   │                   │
+       ▼                   ▼                   ▼
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ STAFF MODEL │    │ WEEKLY      │    │ SCHEDULE    │
+│ Updated     │    │ SUMMARY     │    │ CREATION    │
+│ Records     │    │ Generated   │    │ & ASSIGN    │
+└─────────────┘    └─────────────┘    └─────────────┘
+
+BENEFITS:
+✅ Aligned timing with Roddy's "Friday before next week" rule
+✅ Fresh employee data when scheduling decisions are made
+✅ ADL data drives AI recommendations
+✅ Staff get weekend to review schedules
+✅ Predictable weekly cycle
+✅ Reduced system load (weekly vs daily)
+✅ Better error handling and monitoring
+
+COMMANDS:
+# Weekly Paycom sync (run Fridays at 2 PM)
+python manage.py sync_paycom_weekly --notify
+
+# Check sync status
+python manage.py shell -c "
+from paycom.models import PaycomSyncLog
+recent = PaycomSyncLog.objects.filter(status='completed').order_by('-started_at')[:3]
+for sync in recent:
+    print(f'{sync.started_at.date()}: {sync.employees_processed} employees processed')
+"
+
+# Test AI recommendations for any week
+python manage.py shell -c "
+from scheduling.views import AIRecommendationViewSet
+from residents.models import Facility
+murray = Facility.objects.filter(name__icontains='murray').first()
+if murray:
+    viewset = AIRecommendationViewSet()
+    class MockRequest:
+        def __init__(self, facility, week):
+            self.query_params = {'facility': str(facility), 'week_start': week}
+    
+    response = viewset.calculate_from_adl(MockRequest(murray.id, '2025-07-28'))
+    print(f'Generated {len(response.data.get(\"recommendations\", []))} recommendations')
+"

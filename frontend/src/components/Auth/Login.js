@@ -33,9 +33,12 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
     setError('');
 
     try {
+      console.log('🔐 Login attempt:', { username: formData.username, browser: navigator.userAgent });
       const response = await authService.login(formData);
+      console.log('✅ Login successful:', response);
       onLogin(response.user, response.token);
     } catch (err) {
+      console.error('❌ Login failed:', err);
       setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);

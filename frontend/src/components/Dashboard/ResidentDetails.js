@@ -23,10 +23,28 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Tabs,
+  Tab,
+  Grid,
+  Card,
+  CardContent,
+  Chip,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import {
+  CalendarToday as CalendarIcon,
+  Save as SaveIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Assessment as AssessmentIcon,
+  ViewList as ViewListIcon,
+  DateRange as DateRangeIcon,
+} from '@mui/icons-material';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config';
 import CaregivingSummaryChart from './CaregivingSummaryChart';
+import { useWeek } from '../../contexts/WeekContext';
 
 const days = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
@@ -41,6 +59,7 @@ const shifts = [
 const ResidentDetails = () => {
   const { residentId } = useParams();
   const navigate = useNavigate();
+  const { selectedWeek, getWeekLabel } = useWeek();
   const [resident, setResident] = useState(null);
   const [adls, setAdls] = useState([]); // All ADL responses for this resident
   const [questions, setQuestions] = useState([]); // Master list
@@ -48,16 +67,47 @@ const ResidentDetails = () => {
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [modalQuestion, setModalQuestion] = useState(null);
+  const [weeklyEntries, setWeeklyEntries] = useState([]);
+  const [weeklyLoading, setWeeklyLoading] = useState(false);
+  const [weeklyError, setWeeklyError] = useState('');
+  const [weeklySuccess, setWeeklySuccess] = useState('');
   const [modalForm, setModalForm] = useState({ minutes: '', frequency: '', per_day_shift_times: {} });
   const [modalAdlId, setModalAdlId] = useState(null);
   const [modalError, setModalError] = useState('');
   const [modalLoading, setModalLoading] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
+  const [chartRefreshKey, setChartRefreshKey] = useState(0);
 
   useEffect(() => {
     fetchAll();
     // eslint-disable-next-line
   }, [residentId]);
+
+  // Refetch weekly entries when selectedWeek changes
+  useEffect(() => {
+    if (selectedWeek && resident) {
+      fetchWeeklyEntries();
+    }
+  }, [selectedWeek, resident]);
+
+  // Helper function to ensure we always use Monday dates
+  const normalizeToMonday = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const dayOfWeek = date.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const monday = new Date(date);
+    monday.setDate(date.getDate() - daysToMonday);
+    return monday.toISOString().split('T')[0];
+  };
+
+  // Helper function to get week end date (Sunday)
+  const getWeekEndDate = (mondayDate) => {
+    if (!mondayDate) return '';
+    const date = new Date(mondayDate);
+    date.setDate(date.getDate() + 6);
+    return date.toISOString().split('T')[0];
+  };
 
   const fetchAll = async () => {
     setLoading(true);
@@ -78,21 +128,172 @@ const ResidentDetails = () => {
     }
   };
 
-  // Map: adl_question.id -> ADL response
+  // Weekly ADL functions
+  const fetchWeeklyEntries = async () => {
+    if (!residentId || !selectedWeek) return;
+    
+    setWeeklyLoading(true);
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/weekly-adls/?resident=${residentId}&page_size=1000`
+      );
+      
+      // Handle paginated response
+      const allEntries = response.data.results || response.data;
+      console.log('🔍 All weekly entries:', allEntries.length);
+      
+      const weekEntries = allEntries.filter(entry => 
+        entry.week_start_date === selectedWeek
+      );
+      console.log('🔍 Filtered entries for week:', weekEntries.length, 'week:', selectedWeek);
+      
+      setWeeklyEntries(weekEntries);
+    } catch (err) {
+      setWeeklyError('Failed to fetch weekly entries');
+    } finally {
+      setWeeklyLoading(false);
+    }
+  };
+
+  const handleWeeklyEntrySave = async (questionId, entryData) => {
+    if (!residentId || !selectedWeek) return;
+
+    try {
+      const weekEnd = new Date(selectedWeek);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      
+      const payload = {
+        resident: residentId,
+        adl_question: questionId,
+        question_text: questions.find(q => q.id === questionId)?.text || '',
+        week_start_date: selectedWeek,
+        week_end_date: weekEnd.toISOString().split('T')[0],
+        minutes_per_occurrence: entryData.minutes_per_occurrence || 0,
+        frequency_per_week: entryData.frequency_per_week || 0,
+        total_minutes_week: (entryData.minutes_per_occurrence || 0) * (entryData.frequency_per_week || 0),
+        status: entryData.status || 'Complete',
+        notes: entryData.notes || ''
+      };
+
+      // Check if entry already exists for this week and question
+      const existingEntry = weeklyEntries.find(entry => 
+        entry.adl_question === questionId && entry.week_start_date === selectedWeek
+      );
+
+      if (existingEntry) {
+        await axios.patch(`${API_BASE_URL}/api/weekly-adls/${existingEntry.id}/`, payload);
+        setWeeklySuccess('Weekly ADL entry updated successfully!');
+      } else {
+        await axios.post(`${API_BASE_URL}/api/weekly-adls/`, payload);
+        setWeeklySuccess('Weekly ADL entry created successfully!');
+      }
+
+      fetchWeeklyEntries();
+      // Trigger chart refresh
+      setChartRefreshKey(prev => prev + 1);
+    } catch (err) {
+      setWeeklyError('Failed to save weekly ADL entry');
+    }
+  };
+
+  // Use getWeekLabel from WeekContext instead of local definition
+  // const getWeekLabel = (dateStr) => { ... } // REMOVED - using WeekContext version
+
+  useEffect(() => {
+    if (selectedWeek && residentId) {
+      fetchWeeklyEntries();
+    }
+  }, [selectedWeek, residentId]);
+
+  // Map: adl_question.id -> ADL response (legacy)
   const adlMap = {};
   adls.forEach(adl => {
     if (adl.adl_question) adlMap[adl.adl_question] = adl;
   });
 
+  // Map: adl_question.id -> WeeklyADLEntry response (current)
+  const weeklyEntryMap = {};
+  weeklyEntries.forEach(entry => {
+    if (entry.adl_question) weeklyEntryMap[entry.adl_question] = entry;
+  });
+  
+  console.log('🔍 Weekly entries loaded:', weeklyEntries.length);
+  console.log('🔍 Weekly entry map:', Object.keys(weeklyEntryMap));
+
   const handleOpenModal = (question) => {
+    // Use WeeklyADLEntry data if available, fallback to legacy ADL data
+    const weeklyEntry = weeklyEntryMap[question.id];
     const adl = adlMap[question.id];
+    
+    console.log('🔍 Opening modal for question:', question.id);
+    console.log('🔍 Question text:', question.text);
+    console.log('🔍 WeeklyEntry found:', !!weeklyEntry);
+    console.log('🔍 WeeklyEntry data:', weeklyEntry);
+    console.log('🔍 ADL fallback found:', !!adl);
+    
     setModalQuestion(question);
-    setModalAdlId(adl ? adl.id : null);
-    setModalForm({
-      minutes: adl ? adl.minutes : '',
-      frequency: adl ? adl.frequency : '',
-      per_day_shift_times: adl ? { ...adl.per_day_shift_times } : {},
-    });
+    setModalAdlId(weeklyEntry ? weeklyEntry.id : (adl ? adl.id : null));
+    
+    if (weeklyEntry) {
+      console.log('🔍 Converting WeeklyADLEntry data to modal format');
+      console.log('🔍 WeeklyEntry per_day_data:', weeklyEntry.per_day_data);
+      
+      // Convert WeeklyADLEntry per_day_data to per_day_shift_times format
+      const per_day_shift_times = {};
+      
+      if (weeklyEntry.per_day_data) {
+        // Check if it's in old format (MonShift1Time, MonShift2Time, etc.)
+        const oldFormatKeys = Object.keys(weeklyEntry.per_day_data);
+        const isOldFormat = oldFormatKeys.some(key => key.includes('Shift') && key.includes('Time'));
+        
+        if (isOldFormat) {
+          console.log('🔍 Detected old format, using data directly');
+          // Old format: {'MonShift1Time': 1, 'MonShift2Time': 0, ...}
+          Object.assign(per_day_shift_times, weeklyEntry.per_day_data);
+        } else {
+          console.log('🔍 Detected new format, converting to old format');
+          // New format: {'Monday': {'Day': 1}, 'Tuesday': {'Swing': 1}, ...}
+          const shiftMapping = { 'Day': 'Shift1', 'Swing': 'Shift2', 'NOC': 'Shift3' };
+          const dayMapping = {
+            'Monday': 'Mon', 'Tuesday': 'Tues', 'Wednesday': 'Wed', 'Thursday': 'Thurs',
+            'Friday': 'Fri', 'Saturday': 'Sat', 'Sunday': 'Sun'
+          };
+          
+          Object.entries(weeklyEntry.per_day_data).forEach(([day, shifts]) => {
+            const dayPrefix = dayMapping[day];
+            if (dayPrefix) {
+              Object.entries(shifts || {}).forEach(([shiftName, frequency]) => {
+                const shiftKey = shiftMapping[shiftName];
+                if (shiftKey) {
+                  per_day_shift_times[`${dayPrefix}${shiftKey}Time`] = frequency;
+                }
+              });
+            }
+          });
+        }
+      }
+      
+      console.log('🔍 Converted per_day_shift_times:', per_day_shift_times);
+      console.log('🔍 Modal form values:', {
+        minutes: weeklyEntry.minutes_per_occurrence || '',
+        frequency: weeklyEntry.frequency_per_week || '',
+        per_day_shift_times: per_day_shift_times,
+      });
+      
+      setModalForm({
+        minutes: weeklyEntry.minutes_per_occurrence || '',
+        frequency: weeklyEntry.frequency_per_week || '',
+        per_day_shift_times: per_day_shift_times,
+      });
+    } else {
+      // Fallback to legacy ADL data
+      setModalForm({
+        minutes: adl ? adl.minutes : '',
+        frequency: adl ? adl.frequency : '',
+        per_day_shift_times: adl ? { ...adl.per_day_shift_times } : {},
+      });
+    }
+    
     setModalError('');
     setModalOpen(true);
   };
@@ -202,28 +403,40 @@ const ResidentDetails = () => {
       Object.entries(modalForm.per_day_shift_times || {}).forEach(([k, v]) => {
         sanitizedPerDayShiftTimes[k] = v === '' || v === undefined || v === null ? 0 : Number(v);
       });
+      
+      // Calculate frequency from per_day_shift_times
+      const calculatedFrequency = Object.values(sanitizedPerDayShiftTimes).reduce((sum, val) => sum + val, 0);
+      
+      const weekEnd = new Date(selectedWeek);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      
       const payload = {
-        minutes: Number(modalForm.minutes),
-        frequency: calculatedFrequency,
-        per_day_shift_times: sanitizedPerDayShiftTimes,
+        resident: resident.id,
+        adl_question: modalQuestion.id,
+        question_text: modalQuestion.text,
+        week_start_date: selectedWeek,
+        week_end_date: weekEnd.toISOString().split('T')[0],
+        minutes_per_occurrence: Number(modalForm.minutes),
+        frequency_per_week: calculatedFrequency,
+        total_minutes_week: Number(modalForm.minutes) * calculatedFrequency,
+        per_day_data: sanitizedPerDayShiftTimes,
+        status: 'complete',
+        notes: ''
       };
+      
       if (modalAdlId) {
-        await axios.patch(`${API_BASE_URL}/api/adls/${modalAdlId}/`, payload);
+        await axios.patch(`${API_BASE_URL}/api/weekly-adls/${modalAdlId}/`, payload);
       } else {
-        await axios.post(`${API_BASE_URL}/api/adls/`, {
-          resident: resident.id,
-          adl_question: modalQuestion.id,
-          question_text: modalQuestion.text,
-          ...payload,
-        });
+        await axios.post(`${API_BASE_URL}/api/weekly-adls/`, payload);
       }
+      
       setModalOpen(false);
-      fetchAll();
+      fetchWeeklyEntries(); // Refresh weekly entries
     } catch (err) {
       setModalError(
         err.response?.data
           ? JSON.stringify(err.response.data)
-          : 'Failed to save ADL response.'
+          : 'Failed to save weekly ADL entry.'
       );
     } finally {
       setModalLoading(false);
@@ -270,40 +483,284 @@ const ResidentDetails = () => {
           <Typography>Facility: {resident.facility_name} (ID: {resident.facility_id})</Typography>
         </Paper>
 
+        {/* Current Week Info */}
+        <Paper sx={{ p: 2, mb: 2, bgcolor: 'info.50', border: '1px solid', borderColor: 'info.200' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="h6" color="info.main">
+              📅 Current Week: {getWeekLabel(selectedWeek)}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              All data below represents caregiving activities for this specific week (Monday to Sunday)
+            </Typography>
+          </Box>
+        </Paper>
+
         {/* Caregiving Summary Chart */}
         <CaregivingSummaryChart 
-          title={`Caregiving Time Summary - ${resident?.first_name} ${resident?.last_name}`}
-          endpoint={`${API_BASE_URL}/api/residents/${resident.id}/caregiving_summary/`}
+          key={`chart-${resident?.id}-${selectedWeek}-${chartRefreshKey}`}
+          title={resident ? `Weekly Caregiving Hours - ${resident.name} - ${getWeekLabel(selectedWeek)}` : 'Weekly Caregiving Hours - Loading...'}
+          endpoint={resident ? `${API_BASE_URL}/api/residents/${resident.id}/caregiving_summary/` : null}
+          queryParams={selectedWeek ? { week_start_date: selectedWeek } : {}}
         />
 
         <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>ADL Questions</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box>
+              <Typography variant="h6">
+                Weekly ADL Data Entry
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selectedWeek === '2025-09-21' ? 
+                  'View and edit caregiving data for the current week (September 21-27, 2025)' :
+                  'Enter caregiving data for the selected week (Monday to Sunday)'}
+              </Typography>
+            </Box>
+          </Box>
+
+          {weeklyError && <Alert severity="error" onClose={() => setWeeklyError('')} sx={{ mb: 2 }}>{weeklyError}</Alert>}
+          {weeklySuccess && <Alert severity="success" onClose={() => setWeeklySuccess('')} sx={{ mb: 2 }}>{weeklySuccess}</Alert>}
+
+          {/* Weekly Summary */}
+          <Paper sx={{ p: 2, mb: 3, bgcolor: 'primary.50' }}>
+            <Typography variant="h6" gutterBottom>
+              Week Summary: {getWeekLabel(selectedWeek)}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Data represents caregiving activities for this specific week (Monday to Sunday)
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={4}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="primary">
+                    {weeklyEntries.length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Questions Completed
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="success.main">
+                    {questions.length > 0 ? Math.round((weeklyEntries.length / questions.length) * 100) : 0}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Completion Rate
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="info.main">
+                    {weeklyEntries.reduce((sum, entry) => sum + (entry.total_hours_week || 0), 0).toFixed(1)}h
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Caregiving Hours
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
                   <TableCell>#</TableCell>
                   <TableCell>Question</TableCell>
-                  <TableCell>Minutes</TableCell>
-                  <TableCell>Frequency</TableCell>
+                  <TableCell>Minutes/Occurrence</TableCell>
+                  <TableCell>Frequency/Week</TableCell>
+                  <TableCell>Total Hours</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {questions.map((q, idx) => {
-                  const adl = adlMap[q.id];
+                  // Always show weekly ADL data for consistency with chart
+                  const weeklyEntry = weeklyEntries.find(entry => 
+                    entry.adl_question === q.id && entry.week_start_date === selectedWeek
+                  );
+                  
                   return (
                     <TableRow key={q.id}>
                       <TableCell>{idx + 1}</TableCell>
                       <TableCell>{q.text}</TableCell>
-                      <TableCell>{adl ? adl.minutes : '-'}</TableCell>
-                      <TableCell>{adl ? adl.frequency : '-'}</TableCell>
-                      <TableCell>{adl ? adl.status : 'Incomplete'}</TableCell>
                       <TableCell>
-                        <Button variant="outlined" size="small" onClick={() => handleOpenModal(q)}>
-                          {adl ? 'Edit' : 'Start'}
-                        </Button>
+                        {weeklyEntry ? (
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={weeklyEntry.minutes_per_occurrence || 0}
+                            onChange={async (e) => {
+                              const newMinutes = parseInt(e.target.value) || 0;
+                              const newTotal = newMinutes * (weeklyEntry.frequency_per_week || 0);
+                              const updatedEntry = { 
+                                ...weeklyEntry, 
+                                minutes_per_occurrence: newMinutes, 
+                                total_minutes_week: newTotal, 
+                                total_hours_week: newTotal / 60 
+                              };
+                              setWeeklyEntries(prev => prev.map(entry => 
+                                entry.id === weeklyEntry.id ? updatedEntry : entry
+                              ));
+                              
+                              // Auto-save to backend
+                              try {
+                                await axios.patch(`${API_BASE_URL}/api/weekly-adls/${weeklyEntry.id}/`, {
+                                  minutes_per_occurrence: newMinutes,
+                                  total_minutes_week: newTotal,
+                                  total_hours_week: newTotal / 60,
+                                  per_day_data: weeklyEntry.per_day_data || {}
+                                });
+                              } catch (err) {
+                                console.error('Failed to auto-save:', err);
+                              }
+                            }}
+                            inputProps={{ min: 0 }}
+                            sx={{ width: 80 }}
+                          />
+                        ) : (
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={0}
+                            disabled
+                            inputProps={{ min: 0 }}
+                            sx={{ width: 80 }}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {weeklyEntry ? (
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={weeklyEntry.frequency_per_week || 0}
+                            onChange={async (e) => {
+                              const newFreq = parseInt(e.target.value) || 0;
+                              const newTotal = (weeklyEntry.minutes_per_occurrence || 0) * newFreq;
+                              const updatedEntry = { 
+                                ...weeklyEntry, 
+                                frequency_per_week: newFreq, 
+                                total_minutes_week: newTotal, 
+                                total_hours_week: newTotal / 60 
+                              };
+                              setWeeklyEntries(prev => prev.map(entry => 
+                                entry.id === weeklyEntry.id ? updatedEntry : entry
+                              ));
+                              
+                              // Auto-save to backend
+                              try {
+                                await axios.patch(`${API_BASE_URL}/api/weekly-adls/${weeklyEntry.id}/`, {
+                                  frequency_per_week: newFreq,
+                                  total_minutes_week: newTotal,
+                                  total_hours_week: newTotal / 60,
+                                  per_day_data: weeklyEntry.per_day_data || {}
+                                });
+                              } catch (err) {
+                                console.error('Failed to auto-save:', err);
+                              }
+                            }}
+                            inputProps={{ min: 0 }}
+                            sx={{ width: 80 }}
+                          />
+                        ) : (
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={0}
+                            disabled
+                            inputProps={{ min: 0 }}
+                            sx={{ width: 80 }}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {weeklyEntry ? (
+                          <Typography variant="body2" color="primary">
+                            {weeklyEntry.total_hours_week?.toFixed(1) || 0}h
+                          </Typography>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            0.0h
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {weeklyEntry ? (
+                          <Select
+                            size="small"
+                            value={weeklyEntry.status || 'Complete'}
+                            onChange={(e) => {
+                              setWeeklyEntries(prev => prev.map(entry => 
+                                entry.id === weeklyEntry.id ? { ...entry, status: e.target.value } : entry
+                              ));
+                            }}
+                            sx={{ minWidth: 100 }}
+                          >
+                            <MenuItem value="Complete">Complete</MenuItem>
+                            <MenuItem value="Incomplete">Incomplete</MenuItem>
+                            <MenuItem value="Not Applicable">Not Applicable</MenuItem>
+                          </Select>
+                        ) : (
+                          <Select
+                            size="small"
+                            value="Complete"
+                            disabled
+                            sx={{ minWidth: 100 }}
+                          >
+                            <MenuItem value="Complete">Complete</MenuItem>
+                            <MenuItem value="Incomplete">Incomplete</MenuItem>
+                            <MenuItem value="Not Applicable">Not Applicable</MenuItem>
+                          </Select>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {weeklyEntry ? (
+                          <div>
+                            <Button 
+                              size="small" 
+                              variant="outlined" 
+                              onClick={() => handleOpenModal(q)}
+                            >
+                              Edit Details
+                            </Button>
+                            <Button 
+                              size="small" 
+                              variant="outlined" 
+                              color="error"
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to delete this weekly ADL entry?')) {
+                                  setWeeklyEntries(prev => prev.filter(entry => entry.id !== weeklyEntry.id));
+                                  // Also delete from backend
+                                  axios.delete(`${API_BASE_URL}/api/weekly-adls/${weeklyEntry.id}/`);
+                                }
+                              }}
+                              sx={{ ml: 1 }}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button 
+                            size="small" 
+                            variant="contained" 
+                            onClick={() => {
+                              setModalQuestion(q);
+                              setModalForm({ 
+                                minutes: '', 
+                                frequency: '', 
+                                per_day_shift_times: {} 
+                              });
+                              setModalAdlId(null);
+                              setModalError('');
+                              setModalOpen(true);
+                            }}
+                          >
+                            Add Entry
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
@@ -486,5 +943,6 @@ const ResidentDetails = () => {
     </Container>
   );
 };
+
 
 export default ResidentDetails; 

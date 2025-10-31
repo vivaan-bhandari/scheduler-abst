@@ -32,10 +32,12 @@ import ADLUpload from '../Dashboard/ADLUpload';
 import ADLAnalytics from '../Dashboard/Analytics';
 import CaregivingSummaryChart from '../Dashboard/CaregivingSummaryChart';
 import { API_BASE_URL } from '../../config';
+import { useWeek } from '../../contexts/WeekContext';
 
 const FacilityPage = () => {
   const { facilityId } = useParams();
   const navigate = useNavigate();
+  const { selectedWeek, getWeekLabel } = useWeek();
   const [facility, setFacility] = useState(null);
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -343,8 +345,9 @@ const FacilityPage = () => {
 
       {/* Caregiving Summary Chart */}
       <CaregivingSummaryChart 
-        title={`Caregiving Time Summary - ${facility.name}`}
+        title={`Caregiving Time Summary - ${facility.name} - ${getWeekLabel(selectedWeek)}`}
         endpoint={`${API_BASE_URL}/api/facilities/${facilityId}/caregiving_summary/`}
+        queryParams={selectedWeek ? { week_start_date: selectedWeek } : {}}
       />
 
       {/* Classic ABST Tabs */}
@@ -431,6 +434,16 @@ const FacilityPage = () => {
           </Snackbar>
           <Paper sx={{ p: 3, mt: 3 }}>
             <Typography variant="h6" gutterBottom>Sections</Typography>
+            
+            {selectedWeek !== '2025-07-21' && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  <strong>Week: {getWeekLabel(selectedWeek)} (Debug: {selectedWeek})</strong><br />
+                  Showing sections and residents for this week. ADL data will be empty unless you create new entries.
+                </Typography>
+              </Alert>
+            )}
+            
             {sections.length === 0 ? (
               <Typography color="text.secondary">No sections found for this facility.</Typography>
             ) : (
@@ -575,7 +588,7 @@ const FacilityPage = () => {
         <ADLList facilityId={facilityId} />
       )}
       {tab === 2 && (
-        <ADLUpload facilityId={facilityId} />
+        <ADLUpload facilityId={facilityId} selectedWeek={selectedWeek} />
       )}
       {tab === 3 && (
         <ADLAnalytics facilityId={facilityId} />

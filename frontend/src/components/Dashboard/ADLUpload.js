@@ -22,7 +22,7 @@ import {
 import axios from 'axios';
 import { API_BASE_URL } from '../../config';
 
-const ADLUpload = ({ onSuccess }) => {
+const ADLUpload = ({ onSuccess, selectedWeek }) => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -42,6 +42,17 @@ const ADLUpload = ({ onSuccess }) => {
     
     const formData = new FormData();
     formData.append('file', file);
+    
+    // Add week dates if selectedWeek is provided
+    if (selectedWeek) {
+      // selectedWeek is in format 'YYYY-MM-DD' (Monday of the week)
+      const weekStart = new Date(selectedWeek);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6); // Sunday
+      
+      formData.append('week_start_date', selectedWeek);
+      formData.append('week_end_date', weekEnd.toISOString().split('T')[0]);
+    }
     
     try {
       const response = await axios.post(`${API_BASE_URL}/api/adls/upload/`, formData, {

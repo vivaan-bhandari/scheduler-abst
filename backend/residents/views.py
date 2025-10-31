@@ -11,7 +11,7 @@ import pandas as pd
 import logging
 from django.db.models import Sum
 from adls.models import ADL
-import datetime
+from datetime import datetime, timedelta
 from users.models import FacilityAccess
 from rest_framework.permissions import AllowAny
 
@@ -176,63 +176,50 @@ class ResidentViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def caregiving_summary(self, request, pk=None):
         resident = self.get_object()
-        from adls.models import ADL
         from users.models import FacilityAccess
         
         # Check if user has access to this resident's facility
         user = request.user
         
-        # Superadmins and admins see all ADLs
-        if user.is_staff or getattr(user, 'role', None) in ['superadmin', 'admin']:
-            adls = ADL.objects.filter(resident=resident, is_deleted=False)
-        else:
-            # For anonymous users, return empty data
-            if user.is_anonymous:
+        # Check for week filtering
+        week_start_date = request.query_params.get('week_start_date')
+        
+        if week_start_date:
+            # Parse the week start date
+            try:
+                week_start = datetime.strptime(week_start_date, '%Y-%m-%d').date()
+                
+                # Only use WeeklyADLEntry data for the specific selected week
+                # No baseline data - only show actual data for that week
+                from adls.models import WeeklyADLEntry
+                
+                weekly_entries = WeeklyADLEntry.objects.filter(
+                    resident=resident,
+                    week_start_date=week_start,
+                    status='complete'
+                )
+                
+                # If no WeeklyADLEntry data exists for this week, return empty data
+                if weekly_entries.count() == 0:
+                    return Response({
+                        'per_shift': [{'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
+                        'per_day': [{'day': day, 'hours': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
+                    })
+                else:
+                    # Calculate caregiving summary from WeeklyADLEntry data for this specific week
+                    from adls.views import ADLViewSet # Import here to avoid circular dependency
+                    return ADLViewSet()._calculate_caregiving_summary_from_weekly_entries(weekly_entries)
+                    
+            except ValueError:
                 return Response({
-                    'per_shift': [{'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
+                    'per_shift': [{'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
                     'per_day': [{'day': day, 'hours': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
                 })
-            
-            # Get approved facility IDs for this user
-            approved_facility_ids = FacilityAccess.objects.filter(
-                user=user,
-                status='approved'
-            ).values_list('facility_id', flat=True)
-
-            # Check if user has access to this resident's facility
-            if resident.facility_section.facility.id not in approved_facility_ids:
-                return Response({'error': 'Access denied to this resident'}, status=403)
-
-            adls = ADL.objects.filter(resident=resident, is_deleted=False)
         
-        shift_map = {
-            'Shift1': 'Day',
-            'Shift2': 'Eve',
-            'Shift3': 'NOC',
-        }
-        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        day_prefixes = ['Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun']
-        per_shift = [
-            {'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in days
-        ]
-        
-        # Use resident total shift times for chart calculation (like Oregon ABST)
-        resident_total_times = resident.total_shift_times or {}
-        for i, prefix in enumerate(day_prefixes):
-            for shift_num, shift_name in shift_map.items():
-                col = f'ResidentTotal{prefix}{shift_num}Time'
-                minutes = resident_total_times.get(col, 0)
-                per_shift[i][shift_name] += minutes / 60.0
-        for s in per_shift:
-            for shift in ['Day', 'Eve', 'NOC']:
-                s[shift] = round(s[shift], 2)
-        per_day = [
-            {'day': s['day'], 'hours': round(s['Day'] + s['Eve'] + s['NOC'], 2)}
-            for s in per_shift
-        ]
+        # If no week specified, return empty data
         return Response({
-            'per_shift': per_shift,
-            'per_day': per_day
+            'per_shift': [{'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
+            'per_day': [{'day': day, 'hours': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
         })
 
 from rest_framework.permissions import AllowAny
@@ -277,63 +264,45 @@ class FacilityViewSet(viewsets.ModelViewSet):
         sections = facility.sections.all()
         residents = Resident.objects.filter(facility_section__in=sections)
         
-        # Filter ADLs based on user permissions
-        user = request.user
-        from adls.models import ADL
-        from users.models import FacilityAccess
+        # Check for week filtering
+        week_start_date = request.query_params.get('week_start_date')
         
-        # Superadmins and admins see all ADLs
-        if user.is_staff or getattr(user, 'role', None) in ['superadmin', 'admin']:
-            adls = ADL.objects.filter(resident__in=residents, is_deleted=False)
-        else:
-            # For anonymous users, return empty data
-            if user.is_anonymous:
+        if week_start_date:
+            # Parse the week start date
+            try:
+                week_start = datetime.strptime(week_start_date, '%Y-%m-%d').date()
+                
+                # Only use WeeklyADLEntry data for the specific selected week
+                # No baseline data - only show actual data for that week
+                from adls.models import WeeklyADLEntry
+                
+                weekly_entries = WeeklyADLEntry.objects.filter(
+                    resident__in=residents,
+                    week_start_date=week_start,
+                    status='complete'
+                )
+                
+                # If no WeeklyADLEntry data exists for this week, return empty data
+                if weekly_entries.count() == 0:
+                    return Response({
+                        'per_shift': [{'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
+                        'per_day': [{'day': day, 'hours': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
+                    })
+                else:
+                    # Calculate caregiving summary from WeeklyADLEntry data for this specific week
+                    from adls.views import ADLViewSet # Import here to avoid circular dependency
+                    return ADLViewSet()._calculate_caregiving_summary_from_weekly_entries(weekly_entries)
+                    
+            except ValueError:
                 return Response({
-                    'per_shift': [{'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
+                    'per_shift': [{'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
                     'per_day': [{'day': day, 'hours': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
                 })
-            
-            # Get approved facility IDs for this user
-            approved_facility_ids = FacilityAccess.objects.filter(
-                user=user,
-                status='approved'
-            ).values_list('facility_id', flat=True)
-
-            # Only show data if user has access to this facility
-            if facility.id not in approved_facility_ids:
-                return Response({'error': 'Access denied to this facility'}, status=403)
-
-            adls = ADL.objects.filter(resident__in=residents, is_deleted=False)
         
-        shift_map = {
-            'Shift1': 'Day',
-            'Shift2': 'Eve',
-            'Shift3': 'NOC',
-        }
-        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        day_prefixes = ['Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun']
-        per_shift = [
-            {'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in days
-        ]
-        
-        # Use resident total shift times for chart calculation (like Oregon ABST)
-        for resident in residents:
-            resident_total_times = resident.total_shift_times or {}
-            for i, prefix in enumerate(day_prefixes):
-                for shift_num, shift_name in shift_map.items():
-                    col = f'ResidentTotal{prefix}{shift_num}Time'
-                    minutes = resident_total_times.get(col, 0)
-                    per_shift[i][shift_name] += minutes / 60.0
-        for s in per_shift:
-            for shift in ['Day', 'Eve', 'NOC']:
-                s[shift] = round(s[shift], 2)
-        per_day = [
-            {'day': s['day'], 'hours': round(s['Day'] + s['Eve'] + s['NOC'], 2)}
-            for s in per_shift
-        ]
+        # If no week specified, return empty data
         return Response({
-            'per_shift': per_shift,
-            'per_day': per_day
+            'per_shift': [{'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
+            'per_day': [{'day': day, 'hours': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
         })
 
 class FacilitySectionViewSet(viewsets.ModelViewSet):
@@ -357,7 +326,7 @@ class FacilitySectionViewSet(viewsets.ModelViewSet):
             # For anonymous users, return empty data
             if user.is_anonymous:
                 return Response({
-                    'per_shift': [{'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
+                    'per_shift': [{'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
                     'per_day': [{'day': day, 'hours': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
                 })
             
@@ -376,14 +345,14 @@ class FacilitySectionViewSet(viewsets.ModelViewSet):
         # Map shift columns to readable names
         shift_map = {
             'Shift1': 'Day',
-            'Shift2': 'Eve',
+            'Shift2': 'Swing',
             'Shift3': 'NOC',
         }
         days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
         day_prefixes = ['Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun']
         # Initialize summary structure
         per_shift = [
-            {'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in days
+            {'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in days
         ]
         
         # Use resident total shift times for chart calculation (like Oregon ABST)
@@ -396,11 +365,11 @@ class FacilitySectionViewSet(viewsets.ModelViewSet):
                     per_shift[i][shift_name] += minutes / 60.0  # convert to hours
         # Optionally round to 2 decimals
         for s in per_shift:
-            for shift in ['Day', 'Eve', 'NOC']:
+            for shift in ['Day', 'Swing', 'NOC']:
                 s[shift] = round(s[shift], 2)
         # Simple per-day total
         per_day = [
-            {'day': s['day'], 'hours': round(s['Day'] + s['Eve'] + s['NOC'], 2)}
+            {'day': s['day'], 'hours': round(s['Day'] + s['Swing'] + s['NOC'], 2)}
             for s in per_shift
         ]
         return Response({

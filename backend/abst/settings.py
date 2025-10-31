@@ -29,11 +29,11 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 # HTTPS/SSL Settings
 USE_HTTPS = config('USE_HTTPS', default=False, cast=bool)
-SECURE_SSL_REDIRECT = USE_HTTPS
+SECURE_SSL_REDIRECT = False  # Force disable for development
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if USE_HTTPS else None
 
 # Railway-specific settings
-RAILWAY_ENVIRONMENT = config('RAILWAY_ENVIRONMENT', default='production')
+RAILWAY_ENVIRONMENT = config('RAILWAY_ENVIRONMENT', default='development')
 RAILWAY_SERVICE_NAME = config('RAILWAY_SERVICE_NAME', default='scheduler-abst')
 
 # Security settings for HTTPS
@@ -54,13 +54,13 @@ else:
 # Railway deployment security settings
 if RAILWAY_ENVIRONMENT == 'production':
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = False  # Disabled for development
+    SESSION_COOKIE_SECURE = False  # Disabled for development
+    CSRF_COOKIE_SECURE = False  # Disabled for development
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,*.railway.app,*.vercel.app,healthcheck.railway.app', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0,*.railway.app,*.vercel.app,healthcheck.railway.app', cast=lambda v: [s.strip() for s in v.split(',')])
 
 # Application definition
 
@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     "adls",
     "users",
     "scheduling",
+    "paycom",
 ]
 
 # Middleware configuration
@@ -243,6 +244,15 @@ if not DEBUG:
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Paycom SFTP Configuration
+PAYCOM_SFTP_HOST = config('PAYCOM_SFTP_HOST', default=None)
+PAYCOM_SFTP_PORT = config('PAYCOM_SFTP_PORT', default=22, cast=int)
+PAYCOM_SFTP_USERNAME = config('PAYCOM_SFTP_USERNAME', default=None)
+PAYCOM_SFTP_PASSWORD = config('PAYCOM_SFTP_PASSWORD', default=None)
+PAYCOM_SFTP_PRIVATE_KEY_PATH = config('PAYCOM_SFTP_PRIVATE_KEY_PATH', default=None)
+PAYCOM_SFTP_REMOTE_DIRECTORY = config('PAYCOM_SFTP_REMOTE_DIRECTORY', default='/')
+PAYCOM_SFTP_LOCAL_DIRECTORY = config('PAYCOM_SFTP_LOCAL_DIRECTORY', default=None)
 
 # Logging configuration for deployment debugging
 LOGGING = {

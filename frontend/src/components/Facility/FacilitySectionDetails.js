@@ -23,10 +23,12 @@ import {
 import axios from 'axios';
 import { API_BASE_URL } from '../../config';
 import CaregivingSummaryChart from '../Dashboard/CaregivingSummaryChart';
+import { useWeek } from '../../contexts/WeekContext';
 
 const FacilitySectionDetails = () => {
   const { sectionId } = useParams();
   const navigate = useNavigate();
+  const { selectedWeek, getWeekLabel } = useWeek();
   const [section, setSection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -137,6 +139,16 @@ const FacilitySectionDetails = () => {
         <Grid item xs={12}>
       <Paper sx={{ p: 2 }}>
         <Typography variant="h6" gutterBottom>Residents</Typography>
+        
+        {selectedWeek !== '2025-07-21' && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              <strong>Week: {getWeekLabel(selectedWeek)}</strong><br />
+              Showing residents for this section. ADL data will be empty unless you create new entries.
+            </Typography>
+          </Alert>
+        )}
+        
         <TableContainer>
           <Table>
             <TableHead>

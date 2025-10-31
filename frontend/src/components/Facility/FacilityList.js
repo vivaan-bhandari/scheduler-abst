@@ -10,22 +10,26 @@ import {
   Skeleton,
   Alert,
   Container,
+  Button,
 } from '@mui/material';
 import {
   Business as BusinessIcon,
   LocationOn as LocationIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
+import { useWeek } from '../../contexts/WeekContext';
 
 const FacilityList = () => {
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { selectedWeek, getWeekLabel } = useWeek();
 
   useEffect(() => {
     fetchFacilities();
@@ -48,6 +52,11 @@ const FacilityList = () => {
     navigate(`/facility/${facilityId}`);
   };
 
+  const handleCreateADLData = () => {
+    // Navigate to a new weekly ADL entry form for the selected week
+    navigate(`/weekly-adl-entry?week=${selectedWeek}`);
+  };
+
   const getFacilityTypeColor = (type) => {
     const colors = {
       'Memory Care': 'primary',
@@ -61,13 +70,13 @@ const FacilityList = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Box sx={{ py: 4 }}>
         <Typography variant="h4" gutterBottom>
           Facilities
         </Typography>
         <Grid container spacing={3}>
           {[1, 2, 3, 4, 5, 6].map((item) => (
-            <Grid item xs={12} sm={6} md={4} key={item}>
+            <Grid item xs={12} sm={6} md={4} lg={3} xl={2} key={item}>
               <Card>
                 <CardContent>
                   <Skeleton variant="text" width="60%" height={32} />
@@ -79,26 +88,56 @@ const FacilityList = () => {
             </Grid>
           ))}
         </Grid>
-      </Container>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Box sx={{ py: 4 }}>
         <Alert severity="error">{error}</Alert>
-      </Container>
+      </Box>
     );
   }
 
+  // Check if selected week has ADL data (only Sept 21-27, 2025 has ADL data)
+  const hasADLDataForWeek = selectedWeek === '2025-07-21';
+
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Box sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>
         Facilities
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
         Select a facility to view its sections and manage residents
       </Typography>
+
+      {!hasADLDataForWeek && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            <strong>Week: {getWeekLabel(selectedWeek)}</strong><br />
+            ADL data is not available for this week. You can view facilities and residents, but ADL assessments will be empty. 
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={handleCreateADLData}
+              sx={{ ml: 2 }}
+            >
+              Create ADL Data
+            </Button>
+          </Typography>
+        </Alert>
+      )}
+
+      {hasADLDataForWeek && (
+        <Alert severity="success" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            <strong>Week: {getWeekLabel(selectedWeek)}</strong><br />
+            This week has existing ADL data. You can view and manage ADL assessments for residents.
+          </Typography>
+        </Alert>
+      )}
 
       {facilities.length === 0 ? (
         <Alert severity="info">
@@ -107,7 +146,7 @@ const FacilityList = () => {
       ) : (
         <Grid container spacing={3}>
           {facilities.map((facility) => (
-            <Grid item xs={12} sm={6} md={4} key={facility.id}>
+            <Grid item xs={12} sm={6} md={4} lg={3} xl={2} key={facility.id}>
               <Card 
                 sx={{ 
                   height: '100%',
@@ -173,7 +212,7 @@ const FacilityList = () => {
           ))}
         </Grid>
       )}
-    </Container>
+    </Box>
   );
 };
 

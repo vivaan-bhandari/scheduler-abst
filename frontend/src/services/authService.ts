@@ -35,14 +35,18 @@ class AuthService {
   // Login user
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
+      console.log('🌐 AuthService: Making login request to:', API_ENDPOINTS.LOGIN);
       const response = await apiService.post<AuthResponse>(API_ENDPOINTS.LOGIN, credentials);
+      console.log('📦 AuthService: Received response:', response);
       
       // Store token and user data
       this.setToken(response.token);
       this.setUser(response.user);
+      console.log('💾 AuthService: Stored token and user data');
       
       return response;
     } catch (error) {
+      console.error('🚨 AuthService: Login error:', error);
       throw error;
     }
   }

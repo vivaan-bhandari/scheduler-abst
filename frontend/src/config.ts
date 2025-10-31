@@ -1,12 +1,12 @@
 const config = {
   development: {
-    API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'https://scheduler-abst-production.up.railway.app',
+    API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000',
   },
   production: {
     API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'https://scheduler-abst-production.up.railway.app',
   },
   test: {
-    API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'https://scheduler-abst-production.up.railway.app',
+    API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000',
   },
 };
 

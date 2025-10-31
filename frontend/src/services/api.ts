@@ -16,6 +16,9 @@ api.interceptors.request.use(
     const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Token ${token}`;
+      console.log('🔍 API Service: Added token to request:', token.substring(0, 20) + '...');
+    } else {
+      console.warn('⚠️ API Service: No auth token found in localStorage');
     }
     return config;
   },
@@ -29,9 +32,21 @@ api.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
+      // Only log out if it's an auth-related endpoint
+      const url = error.config?.url || '';
+      const isAuthEndpoint = url.includes('/login/') || url.includes('/register/') || url.includes('/logout/');
+      
+      if (!isAuthEndpoint) {
+        console.warn('401 error on non-auth endpoint:', url, error.response?.data);
+        // Don't auto-logout for non-auth endpoints, let the component handle the error
+        return Promise.reject(error);
+      }
+      
+      // Unauthorized on auth endpoints - clear token and redirect to login
+      console.log('401 error on auth endpoint, logging out');
       localStorage.removeItem('authToken');
-      window.location.href = '/login';
+      localStorage.removeItem('user');
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }
@@ -71,6 +86,12 @@ export const API_ENDPOINTS = {
   
   // Facility Access
   FACILITY_ACCESS: '/api/facility-access/',
+  
+  // Paycom
+  PAYCOM_EMPLOYEES: '/api/paycom/employees/',
+  PAYCOM_SYNC_LOGS: '/api/paycom/sync-logs/',
+  PAYCOM_FILES: '/api/paycom/files/',
+  PAYCOM_SYNC: '/api/paycom/sync/',
 };
 
 // Generic API methods

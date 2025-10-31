@@ -12,4 +12,6 @@ python-decouple==3.8
 dj-database-url==2.1.0
 pyOpenSSL==24.0.0
 cryptography==42.0.5
-django-extensions==3.2.3 
+django-extensions==3.2.3
+paramiko==3.4.0
+pysftp==0.2.9 
