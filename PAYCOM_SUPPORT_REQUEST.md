@@ -8,7 +8,10 @@ SFTP authentication works perfectly on localhost and FileZilla, but fails when c
 - **Port:** `22`
 - **Username:** `000_10a54_internalad`
 - **Password:** `Q{f3H}bG` (8 characters, contains special characters `{` and `}`)
+  - **Note:** Password is stored as Base64 in Railway: `UXtmM0h9Ykc=`
+  - Password is correctly decoded and verified character-by-character
 - **SFTP Server:** GoAnywhere 7.7.1 (SSH-2.0)
+- **Railway Outbound IP:** Check application logs for "Railway outbound IP address" (logged before each connection attempt)
 
 ## What Works
 ✅ Connection from localhost (Django app) - **SUCCESS**
@@ -53,8 +56,18 @@ Authentication (password) failed.
 ## Next Steps Requested
 1. Please verify the SFTP account is active and has no restrictions
 2. Please check connection logs to see why Railway connections are being rejected
-3. Please advise if IP whitelisting is required or if there are other restrictions
-4. Please confirm if there are any account-level settings that need to be adjusted
+3. **Please whitelist Railway's outbound IP address** (check application logs for the exact IP logged before connection attempts)
+4. Please advise if IP whitelisting is required or if there are other restrictions
+5. Please confirm if there are any account-level settings that need to be adjusted
+
+## Railway IP Address
+The application now logs Railway's outbound IP address before each connection attempt. Look for this log entry:
+```
+Railway outbound IP address: [IP_ADDRESS]
+IMPORTANT: Provide this IP to Paycom support for whitelisting if authentication fails
+```
+
+**Please provide this IP address to Paycom support when requesting whitelisting.**
 
 ## Contact Information
 - **Project:** scheduler-abst (LTCFP)

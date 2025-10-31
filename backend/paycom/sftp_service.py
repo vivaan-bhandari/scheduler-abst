@@ -260,6 +260,29 @@ class PaycomSFTPService:
                         expected_password = 'Q{f3H}bG'
                         logger.info(f"Password equals expected: {password_str == expected_password}")
                     
+                    # Get and log Railway's outbound IP address for Paycom whitelisting
+                    try:
+                        import socket
+                        import requests
+                        # Try to get outbound IP from a public service
+                        try:
+                            response = requests.get('https://api.ipify.org?format=json', timeout=5)
+                            outbound_ip = response.json().get('ip', 'unknown')
+                            logger.info(f"Railway outbound IP address: {outbound_ip}")
+                            logger.info(f"IMPORTANT: Provide this IP to Paycom support for whitelisting if authentication fails")
+                        except Exception:
+                            # Fallback: get IP from socket connection
+                            try:
+                                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                                s.connect(('8.8.8.8', 80))
+                                local_ip = s.getsockname()[0]
+                                s.close()
+                                logger.info(f"Local IP (may not be outbound IP): {local_ip}")
+                            except Exception:
+                                logger.warning("Could not determine outbound IP address")
+                    except Exception:
+                        logger.warning("Could not determine outbound IP address")
+                    
                     # Try connection with explicit password handling
                     logger.info("Attempting connection...")
                     try:
