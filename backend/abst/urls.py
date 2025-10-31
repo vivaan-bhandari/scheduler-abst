@@ -136,3 +136,11 @@ urlpatterns = [
     path("health/", healthcheck, name="healthcheck"),
     path("api/paycom/run-migrations/", run_migrations, name="run_migrations"),  # Always available, standalone endpoint
 ]
+
+# Include Paycom URLs if available
+if PAYCOM_AVAILABLE:
+    try:
+        from paycom import urls as paycom_urls
+        urlpatterns.append(path("api/paycom/", include(paycom_urls.urlpatterns)))
+    except Exception as e:
+        logger.warning(f"Could not include Paycom URLs: {e}")
