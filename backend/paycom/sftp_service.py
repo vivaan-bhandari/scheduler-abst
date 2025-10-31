@@ -48,7 +48,11 @@ class PaycomSFTPService:
         # Get password and ensure it's properly handled (trim whitespace, convert to string)
         password_raw = getattr(settings, 'PAYCOM_SFTP_PASSWORD', None)
         if password_raw:
-            self.password = str(password_raw).strip()
+            # Convert to string and handle encoding issues
+            password_str = str(password_raw).strip()
+            # Ensure we preserve special characters correctly
+            self.password = password_str
+            logger.debug(f"Password loaded: length={len(self.password)}, type={type(self.password)}")
         else:
             self.password = None
         self.private_key_path = getattr(settings, 'PAYCOM_SFTP_PRIVATE_KEY_PATH', None)
@@ -86,6 +90,12 @@ class PaycomSFTPService:
                 # Ensure password is a string (handle special characters)
                 password_str = str(self.password) if self.password else None
                 logger.info(f"Attempting password authentication for user: {self.username}")
+                logger.info(f"Password type: {type(password_str)}, Length: {len(password_str) if password_str else 0}")
+                logger.info(f"Password repr (first/last): {repr(password_str[:2]) if password_str else 'None'}...{repr(password_str[-2:]) if password_str and len(password_str) > 4 else ''}")
+                
+                # Try to connect - log more details
+                logger.info(f"Connecting to {self.host}:{self.port}...")
+                logger.info(f"Password bytes representation: {repr(password_str.encode('utf-8') if password_str else b'')}")
                 
                 ssh_client.connect(
                     hostname=self.host,

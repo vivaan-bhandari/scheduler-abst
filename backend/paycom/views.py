@@ -178,6 +178,48 @@ def trigger_paycom_sync(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])  # Temporarily allow for debugging
+def check_sftp_config(request):
+    """
+    Debug endpoint to check SFTP configuration (without exposing password)
+    """
+    from django.conf import settings
+    from paycom.sftp_service import PaycomSFTPService
+    
+    try:
+        config_info = {
+            'host': getattr(settings, 'PAYCOM_SFTP_HOST', None),
+            'port': getattr(settings, 'PAYCOM_SFTP_PORT', 22),
+            'username': getattr(settings, 'PAYCOM_SFTP_USERNAME', None),
+            'password_set': bool(getattr(settings, 'PAYCOM_SFTP_PASSWORD', None)),
+            'password_length': len(getattr(settings, 'PAYCOM_SFTP_PASSWORD', '')) if getattr(settings, 'PAYCOM_SFTP_PASSWORD', None) else 0,
+            'password_type': str(type(getattr(settings, 'PAYCOM_SFTP_PASSWORD', None))),
+        }
+        
+        # Try to initialize the service to see what happens
+        try:
+            service = PaycomSFTPService()
+            config_info['service_initialized'] = True
+            config_info['service_host'] = service.host
+            config_info['service_username'] = service.username
+            config_info['service_password_length'] = len(service.password) if service.password else 0
+            config_info['service_password_type'] = str(type(service.password))
+        except Exception as e:
+            config_info['service_initialized'] = False
+            config_info['service_error'] = str(e)
+        
+        return JsonResponse({
+            'status': 'success',
+            'config': config_info
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def sync_status(request):
     """
