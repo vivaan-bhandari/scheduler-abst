@@ -25,7 +25,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.common import no_append_slash
 from rest_framework.routers import DefaultRouter
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.core.management import call_command
 from io import StringIO
 from datetime import datetime
@@ -95,7 +95,7 @@ def root_ok(request):
 logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
-@permission_classes([])  # Temporarily allow without auth for migrations
+@permission_classes([AllowAny])  # Temporarily allow without auth for migrations
 def run_migrations(request):
     """
     Standalone API endpoint to run migrations (always available, doesn't depend on Paycom imports)
