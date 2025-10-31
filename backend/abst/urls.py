@@ -32,9 +32,19 @@ from scheduling.views import (
     StaffAvailabilityViewSet, AIInsightViewSet, AIRecommendationViewSet,
     SchedulingDashboardViewSet, TimeTrackingViewSet, WeeklyHoursSummaryViewSet
 )
-from paycom.views import (
-    PaycomEmployeeViewSet, PaycomSyncLogViewSet, PaycomFileViewSet, PaycomSyncViewSet, run_migrations
-)
+try:
+    from paycom.views import (
+        PaycomEmployeeViewSet, PaycomSyncLogViewSet, PaycomFileViewSet, PaycomSyncViewSet, run_migrations
+    )
+    PAYCOM_AVAILABLE = True
+except Exception as e:
+    # If Paycom app is not available (e.g., migrations not run), disable Paycom URLs
+    PAYCOM_AVAILABLE = False
+    PaycomEmployeeViewSet = None
+    PaycomSyncLogViewSet = None
+    PaycomFileViewSet = None
+    PaycomSyncViewSet = None
+    run_migrations = None
 
 router = DefaultRouter()
 router.register(r'adls', ADLViewSet)
@@ -55,10 +65,11 @@ router.register(r'scheduling/ai-recommendations', AIRecommendationViewSet)
 router.register(r'scheduling/dashboard', SchedulingDashboardViewSet, basename='scheduling-dashboard')
 router.register(r'scheduling/time-tracking', TimeTrackingViewSet)
 router.register(r'scheduling/weekly-hours-summary', WeeklyHoursSummaryViewSet)
-router.register(r'paycom/employees', PaycomEmployeeViewSet, basename='paycom-employees')
-router.register(r'paycom/sync-logs', PaycomSyncLogViewSet, basename='paycom-sync-logs')
-router.register(r'paycom/files', PaycomFileViewSet, basename='paycom-files')
-router.register(r'paycom/sync', PaycomSyncViewSet, basename='paycom-sync')
+if PAYCOM_AVAILABLE:
+    router.register(r'paycom/employees', PaycomEmployeeViewSet, basename='paycom-employees')
+    router.register(r'paycom/sync-logs', PaycomSyncLogViewSet, basename='paycom-sync-logs')
+    router.register(r'paycom/files', PaycomFileViewSet, basename='paycom-files')
+    router.register(r'paycom/sync', PaycomSyncViewSet, basename='paycom-sync')
 
 @csrf_exempt
 def healthcheck(request):
@@ -79,6 +90,9 @@ urlpatterns = [
     path("", root_ok, name="root_ok"),  # Minimal root endpoint for Railway
     path("admin/", admin.site.urls),
     path("api/", include(router.urls)),
-    path("api/paycom/run-migrations/", run_migrations, name="run_migrations"),
     path("health/", healthcheck, name="healthcheck"),
 ]
+
+# Conditionally add Paycom migration endpoint
+if PAYCOM_AVAILABLE and run_migrations:
+    urlpatterns.append(path("api/paycom/run-migrations/", run_migrations, name="run_migrations"))

@@ -201,22 +201,16 @@ def run_migrations(request):
     try:
         from django.core.management import call_command
         from io import StringIO
-        import sys
         
         logger.info("Running migrations via API endpoint")
         
         # Capture migration output
         output = StringIO()
-        old_stdout = sys.stdout
-        sys.stdout = output
         
-        try:
-            # Run migrations
-            call_command('migrate', verbosity=2, stdout=output)
-            migration_output = output.getvalue()
-            logger.info(f"Migration output: {migration_output}")
-        finally:
-            sys.stdout = old_stdout
+        # Run migrations and capture output
+        call_command('migrate', verbosity=2, stdout=output)
+        migration_output = output.getvalue()
+        logger.info(f"Migration output: {migration_output}")
         
         return JsonResponse({
             'status': 'success',
@@ -232,5 +226,6 @@ def run_migrations(request):
         return JsonResponse({
             'status': 'error',
             'message': f'Migration failed: {str(e)}',
+            'error_details': str(e),
             'timestamp': str(datetime.now())
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
