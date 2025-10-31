@@ -24,6 +24,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.common import no_append_slash
 from rest_framework.routers import DefaultRouter
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from django.core.management import call_command
+from io import StringIO
+from datetime import datetime
+import logging
+import traceback
 from adls.views import ADLViewSet, WeeklyADLEntryViewSet, WeeklyADLSummaryViewSet
 from residents.views import ResidentViewSet, FacilityViewSet, FacilitySectionViewSet
 from users.views import UserViewSet, FacilityAccessViewSet
@@ -34,7 +41,7 @@ from scheduling.views import (
 )
 try:
     from paycom.views import (
-        PaycomEmployeeViewSet, PaycomSyncLogViewSet, PaycomFileViewSet, PaycomSyncViewSet, run_migrations
+        PaycomEmployeeViewSet, PaycomSyncLogViewSet, PaycomFileViewSet, PaycomSyncViewSet
     )
     PAYCOM_AVAILABLE = True
 except Exception as e:
@@ -44,7 +51,6 @@ except Exception as e:
     PaycomSyncLogViewSet = None
     PaycomFileViewSet = None
     PaycomSyncViewSet = None
-    run_migrations = None
 
 router = DefaultRouter()
 router.register(r'adls', ADLViewSet)
@@ -86,13 +92,47 @@ def root_ok(request):
     # This is used by Railway health checks
     return HttpResponse('OK', content_type='text/plain', status=200)
 
+logger = logging.getLogger(__name__)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def run_migrations(request):
+    """
+    Standalone API endpoint to run migrations (always available, doesn't depend on Paycom imports)
+    """
+    try:
+        logger.info("Running migrations via API endpoint")
+        
+        # Capture migration output
+        output = StringIO()
+        
+        # Run migrations and capture output
+        call_command('migrate', verbosity=2, stdout=output)
+        migration_output = output.getvalue()
+        logger.info(f"Migration output: {migration_output}")
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Migrations completed successfully',
+            'output': migration_output,
+            'timestamp': str(datetime.now())
+        })
+        
+    except Exception as e:
+        logger.error(f"Migration failed via API endpoint: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Migration failed: {str(e)}',
+            'error_details': str(e),
+            'timestamp': str(datetime.now())
+        }, status=500)
+
 urlpatterns = [
     path("", root_ok, name="root_ok"),  # Minimal root endpoint for Railway
     path("admin/", admin.site.urls),
     path("api/", include(router.urls)),
     path("health/", healthcheck, name="healthcheck"),
+    path("api/paycom/run-migrations/", run_migrations, name="run_migrations"),  # Always available, standalone endpoint
 ]
-
-# Conditionally add Paycom migration endpoint
-if PAYCOM_AVAILABLE and run_migrations:
-    urlpatterns.append(path("api/paycom/run-migrations/", run_migrations, name="run_migrations"))
