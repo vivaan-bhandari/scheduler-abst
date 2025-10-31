@@ -95,7 +95,7 @@ def root_ok(request):
 logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # Temporarily allow without auth for migrations
+@permission_classes([IsAuthenticated])
 def run_migrations(request):
     """
     Standalone API endpoint to run migrations (always available, doesn't depend on Paycom imports)

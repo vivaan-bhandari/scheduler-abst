@@ -6,7 +6,7 @@ cmds = ["cd backend && python -m ensurepip --upgrade && python -m pip install -r
 
 [phases.build]
 cmds = [
-  "cd backend && python manage.py migrate",
+  "cd backend && python manage.py migrate --noinput",
   "cd backend && python manage.py collectstatic --noinput"
 ]
 
