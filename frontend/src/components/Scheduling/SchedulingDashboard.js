@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Container,
@@ -42,11 +42,13 @@ import WeeklyPlanner from './WeeklyPlanner';
 import StaffAvailability from './StaffAvailability';
 import AIRecommendations from './AIRecommendations';
 import { API_BASE_URL } from '../../config';
+import { useWeek } from '../../contexts/WeekContext';
 
-const SchedulingDashboard = ({ user, onLogout, onFacilityChange }) => {
+const SchedulingDashboard = ({ user, onLogout, onFacilityChange, initialFacilityId, initialFacilityName }) => {
   const navigate = useNavigate();
+  const { selectedWeek, getWeekLabel } = useWeek();
   const [tab, setTab] = useState(0);
-  const [selectedFacility, setSelectedFacility] = useState('');
+  const [selectedFacility, setSelectedFacility] = useState(initialFacilityId || '');
   const [facilities, setFacilities] = useState([]);
   const [stats, setStats] = useState({
     totalStaff: 0,
@@ -68,6 +70,13 @@ const SchedulingDashboard = ({ user, onLogout, onFacilityChange }) => {
     }
   }, [selectedFacility]);
 
+  // Sync with parent component's facility selection
+  useEffect(() => {
+    if (initialFacilityId && initialFacilityId !== selectedFacility) {
+      setSelectedFacility(initialFacilityId);
+    }
+  }, [initialFacilityId]);
+
   const fetchFacilities = async () => {
     setFacilitiesLoading(true);
     try {
@@ -78,13 +87,14 @@ const SchedulingDashboard = ({ user, onLogout, onFacilityChange }) => {
       console.log('🔍 DEBUG - First facility:', facilitiesData[0]);
       
       setFacilities(facilitiesData);
-      if (facilitiesData.length > 0 && !selectedFacility) {
+      if (facilitiesData.length > 0 && !selectedFacility && !initialFacilityId) {
         const firstFacility = facilitiesData[0];
         console.log('🔍 DEBUG - Auto-selecting first facility:', firstFacility.id, firstFacility.name);
         setSelectedFacility(firstFacility.id);
         
         // Notify parent component about initial facility selection
         if (onFacilityChange) {
+          console.log('🔄 SchedulingDashboard: Auto-selecting initial facility', firstFacility.id, firstFacility.name);
           onFacilityChange(firstFacility.id, firstFacility.name);
         }
       }
@@ -152,6 +162,54 @@ const SchedulingDashboard = ({ user, onLogout, onFacilityChange }) => {
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.is_staff;
 
+  // Add refs to access child component methods
+  const weeklyPlannerRef = useRef(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const [plannerCurrentWeek, setPlannerCurrentWeek] = useState(null);
+
+  // Update planner current week whenever the tab changes or component mounts
+  useEffect(() => {
+    if (tab === 5 && weeklyPlannerRef.current && weeklyPlannerRef.current.getCurrentWeek) {
+      const currentWeek = weeklyPlannerRef.current.getCurrentWeek();
+      setPlannerCurrentWeek(currentWeek);
+      console.log('🔍 SchedulingDashboard: Updated plannerCurrentWeek to:', currentWeek);
+    }
+  }, [tab]);
+
+  // Also update when refresh trigger changes
+  useEffect(() => {
+    if (weeklyPlannerRef.current && weeklyPlannerRef.current.getCurrentWeek) {
+      const currentWeek = weeklyPlannerRef.current.getCurrentWeek();
+      setPlannerCurrentWeek(currentWeek);
+      console.log('🔍 SchedulingDashboard: Updated plannerCurrentWeek from refresh trigger:', currentWeek);
+    }
+  }, [refreshTrigger]);
+
+  const handleRefreshPlanner = () => {
+    console.log('🔍 SchedulingDashboard: handleRefreshPlanner called');
+    console.log('🔍 SchedulingDashboard: weeklyPlannerRef.current:', weeklyPlannerRef.current);
+    
+    // Get the current week from the planner
+    if (weeklyPlannerRef.current && weeklyPlannerRef.current.getCurrentWeek) {
+      const currentWeek = weeklyPlannerRef.current.getCurrentWeek();
+      setPlannerCurrentWeek(currentWeek);
+      console.log('🔍 SchedulingDashboard: Got current week from planner:', currentWeek);
+    }
+    
+    // Trigger refresh by updating the refresh trigger
+    setRefreshTrigger(prev => prev + 1);
+    console.log('🔍 SchedulingDashboard: Updated refreshTrigger to:', refreshTrigger + 1);
+    
+    // Also try to call the method directly if the component is mounted
+    if (weeklyPlannerRef.current && weeklyPlannerRef.current.refreshData) {
+      console.log('🔍 SchedulingDashboard: Calling weeklyPlannerRef.current.refreshData()');
+      weeklyPlannerRef.current.refreshData();
+    } else {
+      console.log('🔍 SchedulingDashboard: weeklyPlannerRef.current or refreshData method not available (component not mounted)');
+    }
+  };
+
   const renderTabContent = () => {
     switch (tab) {
       case 0:
@@ -161,11 +219,11 @@ const SchedulingDashboard = ({ user, onLogout, onFacilityChange }) => {
       case 2:
         return <StaffAssignments facilityId={selectedFacility} />;
       case 3:
-        return <WeeklyPlanner facilityId={selectedFacility} />;
+        return <WeeklyPlanner ref={weeklyPlannerRef} facilityId={selectedFacility} refreshTrigger={refreshTrigger} />;
       case 4:
         return <StaffAvailability facilityId={selectedFacility} />;
       case 5:
-        return <AIRecommendations facilityId={selectedFacility} />;
+        return <AIRecommendations facilityId={selectedFacility} onRecommendationsApplied={handleRefreshPlanner} currentWeek={plannerCurrentWeek} />;
       default:
         return <StaffManagement facilityId={selectedFacility} />;
     }
@@ -212,7 +270,7 @@ const SchedulingDashboard = ({ user, onLogout, onFacilityChange }) => {
         </MenuItem>
       </Menu>
 
-      <Container maxWidth="xl" sx={{ mt: 3 }}>
+      <Container maxWidth={false} sx={{ mt: 3 }}>
 
 
         {/* Facility Selection */}
@@ -235,8 +293,9 @@ const SchedulingDashboard = ({ user, onLogout, onFacilityChange }) => {
                 console.log('🔍 DEBUG - Selected facility object:', facility);
                 setSelectedFacility(facilityId);
                 
-                // Notify parent component about facility change
+                // Notify parent component about facility change immediately
                 if (onFacilityChange && facility) {
+                  console.log('🔄 SchedulingDashboard: Notifying parent of facility change', facilityId, facility.name);
                   onFacilityChange(facilityId, facility.name);
                 }
               }}
@@ -262,6 +321,8 @@ const SchedulingDashboard = ({ user, onLogout, onFacilityChange }) => {
             </Typography>
           )}
         </Paper>
+
+        {/* Dynamic scheduling data check - removed hardcoded week restriction */}
 
         {/* Summary Statistics */}
         <Grid container spacing={3} sx={{ mb: 3 }}>

@@ -32,8 +32,19 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config';
+import { useWeek } from '../../contexts/WeekContext';
 
-const AIRecommendations = ({ facilityId }) => {
+const AIRecommendations = ({ facilityId, onRecommendationsApplied, currentWeek }) => {
+  const { selectedWeek, getWeekLabel } = useWeek();
+  
+  // Use the currentWeek from the planner grid if provided, otherwise fall back to selectedWeek
+  const effectiveWeek = currentWeek || selectedWeek;
+  
+  console.log('🔍 AIRecommendations: Week sources:', {
+    currentWeek,
+    selectedWeek,
+    effectiveWeek
+  });
   const [recommendations, setRecommendations] = useState([]);
   const [noDataMessage, setNoDataMessage] = useState('');
   const [facilityInsights, setFacilityInsights] = useState({
@@ -48,17 +59,16 @@ const AIRecommendations = ({ facilityId }) => {
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
   const [viewMode, setViewMode] = useState(0);
-  const [targetDate, setTargetDate] = useState('2025-08-22');
   const [analysisType, setAnalysisType] = useState('weekly');
   const [notification, setNotification] = useState(null);
 
   useEffect(() => {
     if (facilityId) {
       fetchFacilityInsights();
-      // Automatically fetch recommendations when facility changes
+      // Automatically fetch recommendations when facility or week changes
       fetchWeeklyRecommendations();
     }
-  }, [facilityId]);
+  }, [facilityId, effectiveWeek]);
 
   const fetchFacilityInsights = async () => {
     try {
@@ -70,9 +80,19 @@ const AIRecommendations = ({ facilityId }) => {
   };
 
   const fetchWeeklyRecommendations = async () => {
+    console.log('🔍 AIRecommendations: fetchWeeklyRecommendations called');
+    console.log('🔍 AIRecommendations: facilityId:', facilityId);
+    console.log('🔍 AIRecommendations: effectiveWeek:', effectiveWeek);
+    console.log('🔍 AIRecommendations: weekStart:', effectiveWeek); // effectiveWeek is already the Monday date
+    
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/scheduling/ai-recommendations/calculate_from_adl/?facility=${facilityId}&week_start=${getWeekStart(targetDate)}`);
+      const url = `${API_BASE_URL}/api/scheduling/ai-recommendations/calculate_from_adl/?facility=${facilityId}&week_start=${effectiveWeek}`;
+      console.log('🔍 AIRecommendations: Making request to:', url);
+      
+      const response = await axios.get(url);
+      console.log('🔍 AIRecommendations: Response status:', response.status);
+      console.log('🔍 AIRecommendations: Response data:', response.data);
       
       if (response.data.recommendations) {
         setRecommendations(response.data.recommendations);
@@ -102,6 +122,7 @@ const AIRecommendations = ({ facilityId }) => {
       }
     } catch (error) {
       console.error('Error fetching recommendations:', error);
+      console.error('Error details:', error.response?.data);
     } finally {
       setLoading(false);
     }
@@ -110,7 +131,7 @@ const AIRecommendations = ({ facilityId }) => {
   const fetchStaffingAnalysis = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/scheduling/staffing-analysis/?facility=${facilityId}&date=${targetDate}`);
+      const response = await axios.get(`${API_BASE_URL}/api/scheduling/staffing-analysis/?facility=${facilityId}&date=${effectiveWeek}`);
       setRecommendations(response.data.results || response.data);
     } catch (error) {
       console.error('Error fetching staffing analysis:', error);
@@ -121,13 +142,15 @@ const AIRecommendations = ({ facilityId }) => {
 
   const getWeekStart = (date) => {
     const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    return new Date(d.setDate(diff)).toISOString().split('T')[0];
+    const day = d.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday = 1
+    const monday = new Date(d);
+    monday.setDate(diff);
+    return monday.toISOString().split('T')[0];
   };
 
   const getWeekDays = () => {
-    const start = getWeekStart(targetDate);
+    const start = effectiveWeek; // effectiveWeek is already the Monday date
     const days = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(start);
@@ -156,21 +179,36 @@ const AIRecommendations = ({ facilityId }) => {
 
     setApplying(true);
     try {
+      console.log('🔍 AIRecommendations: Applying recommendations for week:', effectiveWeek);
+      console.log('🔍 AIRecommendations: Facility ID:', facilityId);
+      console.log('🔍 AIRecommendations: Number of recommendations:', recommendations.length);
+      
       const response = await axios.post(`${API_BASE_URL}/api/scheduling/ai-recommendations/apply_weekly_recommendations/`, {
         facility: facilityId,
-        week_start: getWeekStart(targetDate)
+        week_start: effectiveWeek
       });
+      
+      console.log('🔍 AIRecommendations: Apply response:', response.data);
       
       setNotification({
         type: 'success',
         message: `Successfully applied AI recommendations! Created ${response.data.shifts_created} new shifts and updated ${response.data.shifts_updated} existing shifts.`
       });
       
+      // Trigger refresh in the planner grid
+      if (onRecommendationsApplied) {
+        console.log('🔍 AIRecommendations: Calling onRecommendationsApplied callback');
+        onRecommendationsApplied();
+      } else {
+        console.log('🔍 AIRecommendations: onRecommendationsApplied callback not provided');
+      }
+      
       // Clear notification after 5 seconds
       setTimeout(() => setNotification(null), 5000);
       
     } catch (error) {
       console.error('Error applying recommendations:', error);
+      console.error('Error response:', error.response?.data);
       setNotification({
         type: 'error',
         message: error.response?.data?.error || 'Failed to apply recommendations. Please try again.'
@@ -219,6 +257,23 @@ const AIRecommendations = ({ facilityId }) => {
           Loading AI recommendations...
         </Typography>
         <LinearProgress />
+      </Paper>
+    );
+  }
+
+  // Check if selected week has data by looking at recommendations
+  const hasDataForWeek = recommendations.length > 0 || noDataMessage === '';
+
+  if (!hasDataForWeek && !loading) {
+    return (
+      <Paper sx={{ p: 3, textAlign: 'center' }}>
+        <Typography variant="h6" gutterBottom color="warning.main">
+          No AI recommendations available for {getWeekLabel(effectiveWeek)}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          No ADL data available for this week to generate AI recommendations. 
+          Please ensure ADL data has been entered for residents in this facility for this week.
+        </Typography>
       </Paper>
     );
   }
@@ -333,31 +388,19 @@ const AIRecommendations = ({ facilityId }) => {
         </Typography>
         
         <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
-          <TextField
-            label="Target Date"
-            type="date"
-            value={targetDate}
-            onChange={(e) => setTargetDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            sx={{ minWidth: 150 }}
-          />
+          <Typography variant="body1" sx={{ fontWeight: 'medium', color: '#666', minWidth: 200 }}>
+            Week: {getWeekLabel(effectiveWeek)}
+          </Typography>
           
           <Button
-            size="small"
-            variant="outlined"
-            sx={{ 
-              minWidth: 40,
-              borderColor: '#e0e0e0',
-              color: '#666'
-            }}
-          >
-            S
-          </Button>
-
-          <Button
+            type="button"
             variant="contained"
             startIcon={<PlayArrowIcon />}
-            onClick={fetchWeeklyRecommendations}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              fetchWeeklyRecommendations();
+            }}
             disabled={loading}
             sx={{ 
               bgcolor: '#2196f3',
@@ -368,8 +411,13 @@ const AIRecommendations = ({ facilityId }) => {
           </Button>
           
           <Button
+            type="button"
             variant="outlined"
-            onClick={fetchStaffingAnalysis}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              fetchStaffingAnalysis();
+            }}
             disabled={loading}
             sx={{ 
               borderColor: '#e0e0e0',
@@ -541,7 +589,33 @@ const AIRecommendations = ({ facilityId }) => {
                                 </Typography>
                                 <Typography variant="body2" color="#666" sx={{ mb: 0.5 }}>
                                   Staff: {recommendation.required_staff}
-                                </Typography>
+                                </Typography>                                
+                                {/* Role Requirements */}
+                                {recommendation.role_requirements && (
+                                  <Box sx={{ mb: 1 }}>
+                                    {recommendation.role_requirements.med_tech > 0 && (
+                                      <Typography variant="caption" sx={{ 
+                                        display: 'block', 
+                                        color: '#1976d2', 
+                                        fontWeight: 'bold',
+                                        mb: 0.5
+                                      }}>
+                                        MedTech: {recommendation.role_requirements.med_tech}
+                                      </Typography>
+                                    )}
+                                    {recommendation.role_requirements.caregiver > 0 && (
+                                      <Typography variant="caption" sx={{ 
+                                        display: 'block', 
+                                        color: '#2e7d32', 
+                                        fontWeight: 'bold',
+                                        mb: 0.5
+                                      }}>
+                                        Caregiver: {recommendation.role_requirements.caregiver}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                )}
+                                
                                 <Typography variant="body2" color="#666" sx={{ mb: 1 }}>
                                   Residents: {recommendation.resident_count}
                                 </Typography>

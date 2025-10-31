@@ -7,8 +7,8 @@ from django.db.models import Sum, Avg, Count
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import ADL, ADLQuestion
-from .serializers import ADLSerializer, ADLQuestionSerializer
+from .models import ADL, ADLQuestion, WeeklyADLEntry, WeeklyADLSummary
+from .serializers import ADLSerializer, ADLQuestionSerializer, WeeklyADLEntrySerializer, WeeklyADLSummarySerializer
 from residents.models import Resident
 from residents.serializers import ResidentSerializer
 import pandas as pd
@@ -327,6 +327,55 @@ class ADLViewSet(viewsets.ModelViewSet):
                         created_adls += 1
                     else:
                         updated_adls += 1
+                    
+                    # ALSO create WeeklyADLEntry for charts and analytics
+                    # Get week dates from request or use current week
+                    week_start_date = request.POST.get('week_start_date')
+                    week_end_date = request.POST.get('week_end_date')
+                    
+                    if week_start_date and week_end_date:
+                        try:
+                            from datetime import datetime
+                            week_start = datetime.strptime(week_start_date, '%Y-%m-%d').date()
+                            week_end = datetime.strptime(week_end_date, '%Y-%m-%d').date()
+                        except ValueError as e:
+                            print(f"Error parsing week dates: {e}")
+                            # Fallback to current week
+                            from datetime import datetime, timedelta
+                            today = datetime.now().date()
+                            days_since_monday = today.weekday()
+                            week_start = today - timedelta(days=days_since_monday)
+                            week_end = week_start + timedelta(days=6)
+                    else:
+                        # Fallback to current week if no dates provided
+                        from datetime import datetime, timedelta
+                        today = datetime.now().date()
+                        days_since_monday = today.weekday()
+                        week_start = today - timedelta(days=days_since_monday)
+                        week_end = week_start + timedelta(days=6)
+                    
+                    # Create or update WeeklyADLEntry
+                    weekly_entry, weekly_created = WeeklyADLEntry.objects.update_or_create(
+                        resident=current_resident,
+                        week_start_date=week_start,
+                        week_end_date=week_end,
+                        question_text=question_text,
+                        defaults={
+                            'adl_question': adl_question,  # Add the missing adl_question field
+                            'minutes_per_occurrence': int(task_time),
+                            'frequency_per_week': int(total_frequency_from_shifts),
+                            'total_minutes_week': total_minutes,
+                            'per_day_data': per_day_shift_times,
+                            'status': 'complete',
+                            'created_by': request.user if request.user.is_authenticated else None,
+                            'updated_by': request.user if request.user.is_authenticated else None,
+                        }
+                    )
+                    
+                    if weekly_created:
+                        print(f"Created WeeklyADLEntry for {resident_name} - {question_text[:30]}... (Week: {week_start} to {week_end})")
+                    else:
+                        print(f"Updated WeeklyADLEntry for {resident_name} - {question_text[:30]}... (Week: {week_start} to {week_end})")
                     
                     print(f"Row {index}: Processed '{question_text}' for resident '{resident_name}' - {task_time}min x {total_frequency} = {total_minutes} total minutes")
                     
@@ -761,7 +810,7 @@ class ADLViewSet(viewsets.ModelViewSet):
                     continue
         
         return Response({
-            'message': f'Import completed successfully!',
+            'message': f'Import completed successfully! Created {created_adls} ADL records and {created_adls} WeeklyADLEntry records for charts.',
             'details': {
                 'created_residents': created_residents,
                 'created_adls': created_adls,
@@ -847,13 +896,396 @@ class ADLViewSet(viewsets.ModelViewSet):
         )
 
     @action(detail=False, methods=['get'])
+    def analytics(self, request):
+        from residents.models import Resident, FacilitySection
+        from users.models import FacilityAccess
+        from datetime import datetime, timedelta
+        
+        # Get parameters
+        week_start_date = request.query_params.get('week_start_date')
+        facility_id = request.query_params.get('facility_id')
+        resident_id = request.query_params.get('resident_id')
+        
+        if not week_start_date:
+            return Response({'error': 'week_start_date is required'}, status=400)
+        
+        # Parse week start date
+        try:
+            current_week = datetime.strptime(week_start_date, '%Y-%m-%d').date()
+            previous_week = current_week - timedelta(days=7)
+        except ValueError:
+            return Response({'error': 'Invalid week_start_date format. Use YYYY-MM-DD'}, status=400)
+        
+        # Allow analytics for any week - compare with previous week
+        # If requesting Sept 21-27, 2025, use legacy ADL data
+        # For other weeks, use WeeklyADLEntry data
+        
+        # Get ADL data for current week
+        user = request.user
+        
+        # Check if this is the legacy week (Sept 21-27, 2025)
+        if current_week == datetime(2025, 9, 21).date():
+            # Use legacy ADL data for current week
+            if user.is_staff or getattr(user, 'role', None) in ['superadmin', 'admin']:
+                current_adls = ADL.objects.filter(is_deleted=False)
+            else:
+                # Get approved facility IDs for this user
+                approved_facility_ids = FacilityAccess.objects.filter(
+                    user=user,
+                    status='approved'
+                ).values_list('facility_id', flat=True)
+
+                # Get all sections in those facilities
+                allowed_sections = FacilitySection.objects.filter(facility_id__in=approved_facility_ids)
+
+                # Get all residents in those sections
+                allowed_residents = Resident.objects.filter(facility_section__in=allowed_sections)
+
+                # Only ADLs for allowed residents
+                current_adls = ADL.objects.filter(resident__in=allowed_residents, is_deleted=False)
+            
+            # Filter by facility if specified
+            if facility_id:
+                sections = FacilitySection.objects.filter(facility_id=facility_id)
+                residents = Resident.objects.filter(facility_section__in=sections)
+                current_adls = current_adls.filter(resident__in=residents)
+            
+            # Filter by resident if specified
+            if resident_id:
+                current_adls = current_adls.filter(resident_id=resident_id)
+            
+            # Convert ADL objects to analytics format
+            current_week_data = self._convert_adl_to_analytics_format(current_adls)
+        else:
+            # Use WeeklyADLEntry data for other weeks
+            weekly_entries = WeeklyADLEntry.objects.filter(
+                week_start_date=current_week,
+                status='complete'
+            )
+            
+            # Filter by facility if specified
+            if facility_id:
+                sections = FacilitySection.objects.filter(facility_id=facility_id)
+                residents = Resident.objects.filter(facility_section__in=sections)
+                weekly_entries = weekly_entries.filter(resident__in=residents)
+            
+            # Filter by resident if specified
+            if resident_id:
+                weekly_entries = weekly_entries.filter(resident_id=resident_id)
+            
+            # Convert WeeklyADLEntry objects to analytics format
+            current_week_data = self._convert_weekly_entry_to_analytics_format(weekly_entries)
+        
+        # Get previous week data
+        previous_week_data = self._get_previous_week_data(previous_week, user, facility_id, resident_id)
+        
+        # Calculate analytics
+        analytics = self._calculate_analytics(current_week_data, previous_week_data, current_week, previous_week)
+        
+        return Response(analytics)
+    
+    def _convert_adl_to_analytics_format(self, adls):
+        """Convert ADL objects to analytics format"""
+        analytics_data = {}
+        for adl in adls:
+            analytics_data[adl.id] = {
+                'minutes': adl.minutes,
+                'frequency': adl.frequency,
+                'per_day_shift_times': adl.per_day_shift_times or {},
+                'resident_id': adl.resident_id,
+                'adl_question_id': adl.adl_question_id
+            }
+        return analytics_data
+    
+    def _convert_weekly_entry_to_analytics_format(self, weekly_entries):
+        """Convert WeeklyADLEntry objects to analytics format"""
+        analytics_data = {}
+        for entry in weekly_entries:
+            analytics_data[entry.id] = {
+                'minutes': entry.minutes_per_occurrence,
+                'frequency': entry.frequency_per_week,
+                'per_day_shift_times': entry.per_day_data or {},
+                'resident_id': entry.resident_id,
+                'adl_question_id': entry.adl_question_id
+            }
+        return analytics_data
+    
+    def _get_previous_week_data(self, previous_week, user, facility_id, resident_id):
+        """Get previous week data for comparison"""
+        from .models import ADL, WeeklyADLEntry
+        
+        # Check if previous week is the legacy week (Sept 21-27, 2025)
+        if previous_week == datetime(2025, 9, 21).date():
+            # Use legacy ADL data for previous week
+            if user.is_staff or getattr(user, 'role', None) in ['superadmin', 'admin']:
+                previous_adls = ADL.objects.filter(is_deleted=False)
+            else:
+                # Get approved facility IDs for this user
+                approved_facility_ids = FacilityAccess.objects.filter(
+                    user=user,
+                    status='approved'
+                ).values_list('facility_id', flat=True)
+
+                # Get all sections in those facilities
+                allowed_sections = FacilitySection.objects.filter(facility_id__in=approved_facility_ids)
+
+                # Get all residents in those sections
+                allowed_residents = Resident.objects.filter(facility_section__in=allowed_sections)
+
+                # Only ADLs for allowed residents
+                previous_adls = ADL.objects.filter(resident__in=allowed_residents, is_deleted=False)
+            
+            # Filter by facility if specified
+            if facility_id:
+                sections = FacilitySection.objects.filter(facility_id=facility_id)
+                residents = Resident.objects.filter(facility_section__in=sections)
+                previous_adls = previous_adls.filter(resident__in=residents)
+            
+            # Filter by resident if specified
+            if resident_id:
+                previous_adls = previous_adls.filter(resident_id=resident_id)
+            
+            return self._convert_adl_to_analytics_format(previous_adls)
+        else:
+            # Use WeeklyADLEntry data for previous week
+            weekly_entries = WeeklyADLEntry.objects.filter(
+                week_start_date=previous_week,
+                status='complete'
+            )
+            
+            # Filter by facility if specified
+            if facility_id:
+                sections = FacilitySection.objects.filter(facility_id=facility_id)
+                residents = Resident.objects.filter(facility_section__in=sections)
+                weekly_entries = weekly_entries.filter(resident__in=residents)
+            
+            # Filter by resident if specified
+            if resident_id:
+                weekly_entries = weekly_entries.filter(resident_id=resident_id)
+            
+            return self._convert_weekly_entry_to_analytics_format(weekly_entries)
+    
+    def _calculate_analytics(self, current_adls, previous_week_data, current_week, previous_week):
+        """Calculate analytics comparing current and previous week"""
+        
+        # Calculate totals for current week
+        current_total_hours = sum(
+            (adl.minutes * adl.frequency) / 60.0 for adl in current_adls
+        )
+        
+        # Calculate totals for previous week (simulated)
+        previous_total_hours = sum(
+            (data['minutes'] * data['frequency']) / 60.0 
+            for data in previous_week_data.values()
+        )
+        
+        # Calculate changes
+        total_hours_change = current_total_hours - previous_total_hours
+        
+        # Calculate other metrics
+        current_completed_adls = len(current_adls)
+        previous_completed_adls = len(previous_week_data)
+        completed_adls_change = current_completed_adls - previous_completed_adls
+        
+        # Calculate average ADL scores (simplified)
+        current_avg_score = current_total_hours / max(current_completed_adls, 1)
+        previous_avg_score = previous_total_hours / max(previous_completed_adls, 1)
+        avg_score_change = current_avg_score - previous_avg_score
+        
+        # Count unique residents
+        current_residents = len(set(adl.resident_id for adl in current_adls))
+        previous_residents = len(set(data.get('resident_id', 0) for data in previous_week_data.values()))
+        residents_change = current_residents - previous_residents
+        
+        # Create daily trends (simplified)
+        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        daily_trends = []
+        
+        for i, day in enumerate(days):
+            # Simulate daily variations
+            current_day_hours = current_total_hours / 7 * (0.8 + (i * 0.05))
+            previous_day_hours = previous_total_hours / 7 * (0.8 + (i * 0.05))
+            
+            daily_trends.append({
+                'day': day[:3],  # Mon, Tue, etc.
+                'current_week': round(current_day_hours, 1),
+                'previous_week': round(previous_day_hours, 1)
+            })
+        
+        # Create ADL category comparison (simplified)
+        categories = ['Personal Care', 'Mobility', 'Meals', 'Medication', 'Social']
+        adl_categories = []
+        
+        for category in categories:
+            current_category_hours = current_total_hours / len(categories)
+            previous_category_hours = previous_total_hours / len(categories)
+            
+            adl_categories.append({
+                'category': category,
+                'current_week': round(current_category_hours, 1),
+                'previous_week': round(previous_category_hours, 1)
+            })
+        
+        # Create top improvements and areas needing attention
+        top_improvements = []
+        areas_needing_attention = []
+        
+        for category in categories[:3]:  # Top 3 for each
+            change = (current_total_hours / len(categories)) - (previous_total_hours / len(categories))
+            
+            if change > 0:
+                top_improvements.append({
+                    'category': category,
+                    'change': change
+                })
+            else:
+                areas_needing_attention.append({
+                    'category': category,
+                    'change': abs(change)
+                })
+        
+        return {
+            'current_week': current_week.isoformat(),
+            'previous_week': previous_week.isoformat(),
+            'total_hours': {
+                'current': current_total_hours,
+                'previous': previous_total_hours,
+                'change': total_hours_change
+            },
+            'completed_adls': {
+                'current': current_completed_adls,
+                'previous': previous_completed_adls,
+                'change': completed_adls_change
+            },
+            'avg_adl_score': {
+                'current': current_avg_score,
+                'previous': previous_avg_score,
+                'change': avg_score_change
+            },
+            'residents_assessed': {
+                'current': current_residents,
+                'previous': previous_residents,
+                'change': residents_change
+            },
+            'daily_trends': daily_trends,
+            'adl_categories': adl_categories,
+            'top_improvements': top_improvements[:3],
+            'areas_needing_attention': areas_needing_attention[:3]
+        }
+    
+    def _calculate_caregiving_summary_from_weekly_entries(self, weekly_entries):
+        """Calculate caregiving summary from WeeklyADLEntry data"""
+        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        per_shift = [
+            {'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in days
+        ]
+        
+        # Calculate total hours from weekly entries
+        for entry in weekly_entries:
+            # Distribute across days and shifts based on per_day_data
+            per_day_data = entry.per_day_data or {}
+            
+            # Check if per_day_data has the new format (day names as keys)
+            if per_day_data and any(day in per_day_data for day in days):
+                # Use new format: {'Monday': {'Day': 1, 'Swing': 0, 'NOC': 1}, ...}
+                for i, day in enumerate(days):
+                    day_data = per_day_data.get(day, {})
+                    for shift_name in ['Day', 'Swing', 'NOC']:
+                        frequency = day_data.get(shift_name, 0)
+                        hours = (frequency * entry.minutes_per_occurrence) / 60.0
+                        per_shift[i][shift_name] += hours
+            else:
+                # Check for old format (MonShift1Time, MonShift2Time, MonShift3Time, etc.)
+                old_format_days = ['Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun']
+                old_format_shifts = ['Shift1Time', 'Shift2Time', 'Shift3Time']
+                
+                if per_day_data and any(any(key.startswith(day) for key in per_day_data.keys()) for day in old_format_days):
+                    # Use old format: {'MonShift1Time': 1, 'MonShift2Time': 0, 'MonShift3Time': 1, ...}
+                    for i, day_prefix in enumerate(old_format_days):
+                        for j, shift_suffix in enumerate(old_format_shifts):
+                            key = f"{day_prefix}{shift_suffix}"
+                            frequency = per_day_data.get(key, 0)
+                            hours = (frequency * entry.minutes_per_occurrence) / 60.0
+                            shift_name = ['Day', 'Swing', 'NOC'][j]
+                            per_shift[i][shift_name] += hours
+                else:
+                    # Fallback to simple distribution
+                    total_hours = (entry.minutes_per_occurrence * entry.frequency_per_week) / 60.0
+                    # Distribute evenly across days (simple fallback)
+                    daily_hours = total_hours / 7
+                    for i in range(7):
+                        # Simple distribution: 50% Day, 30% Swing, 20% NOC
+                        per_shift[i]['Day'] += daily_hours * 0.5
+                        per_shift[i]['Swing'] += daily_hours * 0.3
+                        per_shift[i]['NOC'] += daily_hours * 0.2
+        
+        # Round to 2 decimal places
+        for s in per_shift:
+            for shift in ['Day', 'Swing', 'NOC']:
+                s[shift] = round(s[shift], 2)
+        
+        per_day = [
+            {'day': s['day'], 'hours': round(s['Day'] + s['Swing'] + s['NOC'], 2)}
+            for s in per_shift
+        ]
+        
+        return Response({
+            'per_shift': per_shift,
+            'per_day': per_day
+        })
+
+    @action(detail=False, methods=['get'])
     def caregiving_summary(self, request):
         from residents.models import Resident, FacilitySection, Facility
-        from .models import ADL
+        from .models import ADL, WeeklyADLEntry
         from users.models import FacilityAccess
+        from datetime import datetime, timedelta
         
         # Use the same filtering logic as get_queryset
         user = request.user
+        
+        # Check for week filtering
+        week_start_date = request.query_params.get('week_start_date')
+        
+        if week_start_date:
+            # Parse the week start date
+            try:
+                week_start = datetime.strptime(week_start_date, '%Y-%m-%d').date()
+                
+                # Only use WeeklyADLEntry data for the specific selected week
+                # No baseline data - only show actual data for that week
+                weekly_entries = WeeklyADLEntry.objects.filter(
+                    week_start_date=week_start,
+                    status='complete'
+                )
+                
+                # Filter by facility if specified
+                facility_id = request.query_params.get('facility_id')
+                if facility_id:
+                    from residents.models import Facility, FacilitySection
+                    try:
+                        facility = Facility.objects.get(id=facility_id)
+                        sections = FacilitySection.objects.filter(facility=facility)
+                        residents = Resident.objects.filter(facility_section__in=sections) 
+                        weekly_entries = weekly_entries.filter(resident__in=residents)
+                    except Facility.DoesNotExist:
+                        pass  # No facility found, return empty data
+                
+                # If no WeeklyADLEntry data exists for this week, return empty data
+                if weekly_entries.count() == 0:
+                    return Response({
+                        'per_shift': [{'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
+                        'per_day': [{'day': day, 'hours': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
+                    })
+                else:
+                    # Calculate caregiving summary from WeeklyADLEntry data for this specific week
+                    return self._calculate_caregiving_summary_from_weekly_entries(weekly_entries)
+                    
+            except ValueError:
+                return Response({
+                    'per_shift': [{'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
+                    'per_day': [{'day': day, 'hours': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
+                })
         
         # Superadmins and admins see all ADLs
         if user.is_staff or getattr(user, 'role', None) in ['superadmin', 'admin']:
@@ -862,7 +1294,7 @@ class ADLViewSet(viewsets.ModelViewSet):
             # For anonymous users, return empty data
             if user.is_anonymous:
                 return Response({
-                    'per_shift': [{'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
+                    'per_shift': [{'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']],
                     'per_day': [{'day': day, 'hours': 0} for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
                 })
             
@@ -884,19 +1316,25 @@ class ADLViewSet(viewsets.ModelViewSet):
         # Optionally filter by facility_id
         facility_id = request.query_params.get('facility_id')
         if facility_id:
-            sections = FacilitySection.objects.filter(facility_id=facility_id)
-            residents = Resident.objects.filter(facility_section__in=sections)
-            adls = adls.filter(resident__in=residents)
+            # facility_id is the database ID, so filter by the facility object
+            from residents.models import Facility
+            try:
+                facility = Facility.objects.get(id=facility_id)
+                sections = FacilitySection.objects.filter(facility=facility)
+                residents = Resident.objects.filter(facility_section__in=sections)
+                adls = adls.filter(resident__in=residents)
+            except Facility.DoesNotExist:
+                pass  # No facility found, return empty data
         
         shift_map = {
             'Shift1': 'Day',
-            'Shift2': 'Eve',
+            'Shift2': 'Swing',
             'Shift3': 'NOC',
         }
         days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
         day_prefixes = ['Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun']
         per_shift = [
-            {'day': day, 'Day': 0, 'Eve': 0, 'NOC': 0} for day in days
+            {'day': day, 'Day': 0, 'Swing': 0, 'NOC': 0} for day in days
         ]
         
         # Use resident total shift times for chart calculation (like Oregon ABST)
@@ -910,13 +1348,304 @@ class ADLViewSet(viewsets.ModelViewSet):
                     minutes = resident_total_times.get(col, 0)
                     per_shift[i][shift_name] += minutes / 60.0
         for s in per_shift:
-            for shift in ['Day', 'Eve', 'NOC']:
+            for shift in ['Day', 'Swing', 'NOC']:
                 s[shift] = round(s[shift], 2)
         per_day = [
-            {'day': s['day'], 'hours': round(s['Day'] + s['Eve'] + s['NOC'], 2)}
+            {'day': s['day'], 'hours': round(s['Day'] + s['Swing'] + s['NOC'], 2)}
             for s in per_shift
         ]
         return Response({
             'per_shift': per_shift,
             'per_day': per_day
         })
+
+
+class WeeklyADLEntryViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing weekly ADL entries.
+    Allows staff to enter ADL data for specific weeks and track historical data.
+    """
+    queryset = WeeklyADLEntry.objects.filter(is_deleted=False)
+    serializer_class = WeeklyADLEntrySerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['resident', 'adl_question', 'status', 'week_start_date', 'week_end_date']
+    search_fields = ['question_text', 'resident__name', 'notes']
+    ordering_fields = ['week_start_date', 'created_at', 'total_hours_week', 'resident__name']
+    ordering = ['-week_start_date', 'resident__name', 'adl_question__order']
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = WeeklyADLEntry.objects.filter(is_deleted=False)
+        
+        # Apply facility filtering if user has facility access
+        if hasattr(user, 'facilityaccess_set'):
+            facility_accesses = user.facilityaccess_set.all()
+            if facility_accesses.exists():
+                facility_ids = [fa.facility_id for fa in facility_accesses]
+                queryset = queryset.filter(resident__facility_id__in=facility_ids)
+        
+        return queryset
+
+    @action(detail=False, methods=['get'], url_path='by-resident/(?P<resident_id>[^/.]+)')
+    def by_resident(self, request, resident_id=None):
+        """
+        Get all weekly ADL entries for a specific resident.
+        """
+        entries = self.get_queryset().filter(resident_id=resident_id)
+        serializer = self.get_serializer(entries, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='by-week/(?P<week_start>[^/.]+)')
+    def by_week(self, request, week_start=None):
+        """
+        Get all weekly ADL entries for a specific week.
+        """
+        from datetime import datetime
+        try:
+            week_start_date = datetime.strptime(week_start, '%Y-%m-%d').date()
+            entries = self.get_queryset().filter(week_start_date=week_start_date)
+            serializer = self.get_serializer(entries, many=True)
+            return Response(serializer.data)
+        except ValueError:
+            return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
+
+    @action(detail=False, methods=['get'], url_path='historical/(?P<resident_id>[^/.]+)')
+    def historical_data(self, request, resident_id=None):
+        """
+        Get historical weekly ADL data for a resident, showing trends over time.
+        """
+        from datetime import datetime, timedelta
+        
+        # Get last 12 weeks of data
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(weeks=12)
+        
+        entries = self.get_queryset().filter(
+            resident_id=resident_id,
+            week_start_date__gte=start_date,
+            week_start_date__lte=end_date
+        ).order_by('week_start_date')
+        
+        # Group by week and ADL question
+        weekly_data = {}
+        for entry in entries:
+            week_key = entry.week_start_date.strftime('%Y-%m-%d')
+            if week_key not in weekly_data:
+                weekly_data[week_key] = {
+                    'week_label': entry.week_label,
+                    'week_start_date': entry.week_start_date,
+                    'adl_questions': {}
+                }
+            
+            weekly_data[week_key]['adl_questions'][entry.adl_question.id] = {
+                'question_text': entry.question_text,
+                'minutes_per_occurrence': entry.minutes_per_occurrence,
+                'frequency_per_week': entry.frequency_per_week,
+                'total_hours_week': entry.total_hours_week,
+                'status': entry.status
+            }
+        
+        return Response({
+            'resident_id': resident_id,
+            'historical_data': list(weekly_data.values()),
+            'date_range': {
+                'start_date': start_date,
+                'end_date': end_date
+            }
+        })
+
+    @action(detail=False, methods=['post'], url_path='bulk-create')
+    def bulk_create_weekly_entries(self, request):
+        """
+        Create multiple weekly ADL entries at once.
+        Useful for staff to enter a full week of ADL data for a resident.
+        """
+        data = request.data
+        resident_id = data.get('resident_id')
+        week_start_date = data.get('week_start_date')
+        week_end_date = data.get('week_end_date')
+        adl_entries = data.get('adl_entries', [])
+        
+        if not resident_id or not week_start_date or not adl_entries:
+            return Response({
+                'error': 'resident_id, week_start_date, and adl_entries are required'
+            }, status=400)
+        
+        try:
+            from datetime import datetime
+            week_start = datetime.strptime(week_start_date, '%Y-%m-%d').date()
+            if week_end_date:
+                week_end = datetime.strptime(week_end_date, '%Y-%m-%d').date()
+            else:
+                week_end = week_start + timedelta(days=6)
+            
+            created_entries = []
+            for entry_data in adl_entries:
+                entry_data.update({
+                    'resident_id': resident_id,
+                    'week_start_date': week_start,
+                    'week_end_date': week_end,
+                    'created_by': request.user
+                })
+                
+                # Calculate total minutes for the week
+                minutes_per_occurrence = entry_data.get('minutes_per_occurrence', 0)
+                frequency_per_week = entry_data.get('frequency_per_week', 0)
+                entry_data['total_minutes_week'] = minutes_per_occurrence * frequency_per_week
+                
+                serializer = self.get_serializer(data=entry_data)
+                if serializer.is_valid():
+                    entry = serializer.save()
+                    created_entries.append(entry)
+                else:
+                    return Response({
+                        'error': 'Invalid entry data',
+                        'details': serializer.errors
+                    }, status=400)
+            
+            # Generate weekly summary
+            self._generate_weekly_summary(resident_id, week_start, week_end)
+            
+            return Response({
+                'message': f'Successfully created {len(created_entries)} weekly ADL entries',
+                'entries': WeeklyADLEntrySerializer(created_entries, many=True).data
+            })
+            
+        except ValueError as e:
+            return Response({'error': f'Invalid date format: {str(e)}'}, status=400)
+
+    def _generate_weekly_summary(self, resident_id, week_start, week_end):
+        """
+        Generate or update weekly summary for a resident.
+        """
+        from datetime import timedelta
+        
+        entries = WeeklyADLEntry.objects.filter(
+            resident_id=resident_id,
+            week_start_date=week_start,
+            is_deleted=False
+        )
+        
+        total_minutes = sum(entry.total_minutes_week for entry in entries)
+        total_frequency = sum(entry.frequency_per_week for entry in entries)
+        total_questions = entries.count()
+        
+        # Get total ADL questions for completion percentage
+        total_adl_questions = ADLQuestion.objects.count()
+        completion_percentage = (total_questions / total_adl_questions * 100) if total_adl_questions > 0 else 0
+        
+        summary, created = WeeklyADLSummary.objects.update_or_create(
+            resident_id=resident_id,
+            week_start_date=week_start,
+            defaults={
+                'week_end_date': week_end,
+                'total_adl_questions': total_questions,
+                'total_minutes_week': total_minutes,
+                'total_frequency_week': total_frequency,
+                'is_complete': completion_percentage >= 100,
+                'completion_percentage': completion_percentage
+            }
+        )
+        
+        return summary
+
+
+class WeeklyADLSummaryViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing weekly ADL summaries.
+    Provides aggregated data for weekly caregiving reports.
+    """
+    queryset = WeeklyADLSummary.objects.all()
+    serializer_class = WeeklyADLSummarySerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['resident', 'is_complete', 'week_start_date', 'week_end_date']
+    search_fields = ['resident__name']
+    ordering_fields = ['week_start_date', 'created_at', 'total_hours_week', 'resident__name']
+    ordering = ['-week_start_date', 'resident__name']
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = WeeklyADLSummary.objects.all()
+        
+        # Apply facility filtering if user has facility access
+        if hasattr(user, 'facilityaccess_set'):
+            facility_accesses = user.facilityaccess_set.all()
+            if facility_accesses.exists():
+                facility_ids = [fa.facility_id for fa in facility_accesses]
+                queryset = queryset.filter(resident__facility_id__in=facility_ids)
+        
+        return queryset
+
+    @action(detail=False, methods=['get'], url_path='trends/(?P<resident_id>[^/.]+)')
+    def weekly_trends(self, request, resident_id=None):
+        """
+        Get weekly trends for a resident showing caregiving hours over time.
+        """
+        from datetime import timedelta
+        
+        # Get last 12 weeks of summaries
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(weeks=12)
+        
+        summaries = self.get_queryset().filter(
+            resident_id=resident_id,
+            week_start_date__gte=start_date,
+            week_start_date__lte=end_date
+        ).order_by('week_start_date')
+        
+        trend_data = []
+        for summary in summaries:
+            trend_data.append({
+                'week_label': summary.week_label,
+                'week_start_date': summary.week_start_date,
+                'total_hours': summary.total_hours_week,
+                'total_minutes': summary.total_minutes_week,
+                'completion_percentage': summary.completion_percentage,
+                'is_complete': summary.is_complete
+            })
+        
+        return Response({
+            'resident_id': resident_id,
+            'trend_data': trend_data,
+            'date_range': {
+                'start_date': start_date,
+                'end_date': end_date
+            }
+        })
+
+    @action(detail=False, methods=['get'], url_path='facility-summary/(?P<facility_id>[^/.]+)')
+    def facility_weekly_summary(self, request, facility_id=None):
+        """
+        Get weekly summary for all residents in a facility.
+        """
+        from datetime import timedelta
+        
+        # Get current week
+        today = timezone.now().date()
+        week_start = today - timedelta(days=today.weekday())  # Monday
+        
+        summaries = self.get_queryset().filter(
+            resident__facility_id=facility_id,
+            week_start_date=week_start
+        )
+        
+        facility_summary = {
+            'facility_id': facility_id,
+            'week_start_date': week_start,
+            'total_residents': summaries.count(),
+            'completed_weeks': summaries.filter(is_complete=True).count(),
+            'total_caregiving_hours': sum(s.total_hours_week for s in summaries),
+            'average_hours_per_resident': sum(s.total_hours_week for s in summaries) / summaries.count() if summaries.count() > 0 else 0,
+            'residents': []
+        }
+        
+        for summary in summaries:
+            facility_summary['residents'].append({
+                'resident_id': summary.resident.id,
+                'resident_name': summary.resident.name,
+                'total_hours': summary.total_hours_week,
+                'completion_percentage': summary.completion_percentage,
+                'is_complete': summary.is_complete
+            })
+        
+        return Response(facility_summary)

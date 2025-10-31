@@ -78,13 +78,13 @@ class Shift(models.Model):
     shift_template = models.ForeignKey(ShiftTemplate, on_delete=models.CASCADE, related_name='shifts')
     facility = models.ForeignKey('residents.Facility', on_delete=models.CASCADE, related_name='shifts')
     required_staff_count = models.PositiveIntegerField(default=1)
-    required_staff_role = models.CharField(max_length=20, default='cna')
+    required_staff_role = models.CharField(max_length=20, default='med_tech')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         ordering = ['date', 'shift_template__start_time']
-        unique_together = ['facility', 'date', 'shift_template']
+        unique_together = ['facility', 'date', 'shift_template', 'required_staff_role']
     
     def __str__(self):
         return f"{self.shift_template.template_name} - {self.date}"
@@ -161,6 +161,142 @@ class StaffAvailability(models.Model):
     
     def __str__(self):
         return f"{self.staff.full_name} - {self.date} ({self.get_availability_status_display()})"
+
+
+class TimeTracking(models.Model):
+    """Track actual clock in/out times and hours worked"""
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='time_tracking')
+    date = models.DateField()
+    clock_in = models.DateTimeField()
+    clock_out = models.DateTimeField(null=True, blank=True)
+    break_start = models.DateTimeField(null=True, blank=True)
+    break_end = models.DateTimeField(null=True, blank=True)
+    
+    # Calculated fields
+    total_hours_worked = models.FloatField(default=0.0)  # Actual hours worked (excluding breaks)
+    regular_hours = models.FloatField(default=0.0)  # Hours up to 40/week
+    overtime_hours = models.FloatField(default=0.0)  # Hours over 40/week
+    
+    # Status tracking
+    STATUS_CHOICES = [
+        ('clocked_in', 'Clocked In'),
+        ('on_break', 'On Break'),
+        ('clocked_out', 'Clocked Out'),
+        ('no_show', 'No Show'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='clocked_in')
+    
+    # Paycom sync tracking
+    paycom_sync_date = models.DateTimeField(null=True, blank=True)
+    paycom_employee_id = models.CharField(max_length=50, blank=True)
+    
+    notes = models.TextField(blank=True)
+    facility = models.ForeignKey('residents.Facility', on_delete=models.CASCADE, related_name='time_tracking')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-date', 'staff__last_name']
+        unique_together = ['staff', 'date']
+        verbose_name_plural = "Time Tracking"
+    
+    def __str__(self):
+        return f"{self.staff.full_name} - {self.date} ({self.total_hours_worked}h)"
+    
+    def save(self, *args, **kwargs):
+        # Calculate total hours worked if clock out is set
+        if self.clock_out and self.clock_in:
+            total_time = self.clock_out - self.clock_in
+            
+            # Subtract break time if applicable
+            if self.break_start and self.break_end:
+                break_time = self.break_end - self.break_start
+                total_time -= break_time
+            
+            self.total_hours_worked = total_time.total_seconds() / 3600.0
+            
+            # Calculate regular vs overtime hours
+            self._calculate_regular_overtime_hours()
+        
+        super().save(*args, **kwargs)
+    
+    def _calculate_regular_overtime_hours(self):
+        """Calculate regular and overtime hours based on weekly total"""
+        if not self.total_hours_worked:
+            return
+        
+        # Get total hours worked this week
+        week_start = self.date - timezone.timedelta(days=self.date.weekday())
+        week_end = week_start + timezone.timedelta(days=6)
+        
+        weekly_hours = TimeTracking.objects.filter(
+            staff=self.staff,
+            date__gte=week_start,
+            date__lte=week_end,
+            clock_out__isnull=False
+        ).aggregate(total=models.Sum('total_hours_worked'))['total'] or 0
+        
+        # Calculate regular vs overtime
+        if weekly_hours <= 40:
+            self.regular_hours = self.total_hours_worked
+            self.overtime_hours = 0
+        else:
+            # This day pushes into overtime
+            regular_remaining = max(0, 40 - (weekly_hours - self.total_hours_worked))
+            self.regular_hours = min(self.total_hours_worked, regular_remaining)
+            self.overtime_hours = max(0, self.total_hours_worked - regular_remaining)
+
+
+class WeeklyHoursSummary(models.Model):
+    """Weekly summary of hours worked for cost control and scheduling"""
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='weekly_hours')
+    week_start_date = models.DateField()
+    week_end_date = models.DateField()
+    
+    # Hours breakdown
+    total_hours_worked = models.FloatField(default=0.0)
+    regular_hours = models.FloatField(default=0.0)
+    overtime_hours = models.FloatField(default=0.0)
+    
+    # Cost implications
+    regular_rate = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
+    overtime_rate = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
+    total_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    
+    # Status flags
+    is_overtime = models.BooleanField(default=False)
+    is_under_hours = models.BooleanField(default=False)
+    is_optimal_hours = models.BooleanField(default=True)
+    
+    # Scheduling impact
+    can_work_more = models.BooleanField(default=True)
+    should_avoid_overtime = models.BooleanField(default=False)
+    
+    # Paycom sync
+    paycom_sync_date = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-week_start_date', 'staff__last_name']
+        unique_together = ['staff', 'week_start_date']
+        verbose_name_plural = "Weekly Hours Summary"
+    
+    def __str__(self):
+        return f"{self.staff.full_name} - Week of {self.week_start_date} ({self.total_hours_worked}h)"
+    
+    def save(self, *args, **kwargs):
+        # Calculate status flags
+        self.is_overtime = self.overtime_hours > 0
+        self.is_under_hours = self.total_hours_worked < 32  # Less than 80% of 40 hours
+        self.is_optimal_hours = 32 <= self.total_hours_worked <= 40
+        
+        # Scheduling recommendations
+        self.can_work_more = self.total_hours_worked < 40
+        self.should_avoid_overtime = self.overtime_hours > 0
+        
+        super().save(*args, **kwargs)
 
 
 class AIInsight(models.Model):

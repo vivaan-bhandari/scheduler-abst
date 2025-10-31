@@ -148,13 +148,21 @@ def create_sample_data_for_facility(facility):
         shift_date = week_start + timedelta(days=i)
         
         for template in created_templates:
+            # Determine role based on shift type and staff count
+            if template.required_staff >= 2:
+                # For shifts requiring 2+ staff, use med_tech as primary role
+                role = 'med_tech'
+            else:
+                # For single staff shifts, alternate between med_tech and caregiver
+                role = 'med_tech' if shift_date.weekday() % 2 == 0 else 'caregiver'
+            
             shift, created = Shift.objects.get_or_create(
                 date=shift_date,
                 shift_template=template,
                 facility=facility,
                 defaults={
                     'required_staff_count': template.required_staff,
-                    'required_staff_role': 'cna'
+                    'required_staff_role': role
                 }
             )
             created_shifts.append(shift)
