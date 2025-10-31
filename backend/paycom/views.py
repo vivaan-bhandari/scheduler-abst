@@ -25,21 +25,13 @@ class PaycomEmployeeViewSet(viewsets.ReadOnlyModelViewSet):
     """
     serializer_class = PaycomEmployeeSerializer
     filterset_class = PaycomEmployeeFilter
-    
-    def get_queryset(self):
-        # Check if PaycomEmployee table exists
-        try:
-            return PaycomEmployee.objects.all()
-        except Exception:
-            # Table doesn't exist yet (migrations not run)
-            return PaycomEmployee.objects.none()
     permission_classes = [AllowAny]
 
     def get_queryset(self):
         try:
-            queryset = super().get_queryset()
+            queryset = PaycomEmployee.objects.all()
         except Exception:
-            # Table doesn't exist yet
+            # Table doesn't exist yet (migrations not run)
             return PaycomEmployee.objects.none()
         
         # Apply week filtering if provided
