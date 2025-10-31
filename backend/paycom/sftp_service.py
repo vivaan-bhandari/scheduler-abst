@@ -94,7 +94,8 @@ class PaycomSFTPService:
                     password=password_str,
                     timeout=30,
                     allow_agent=False,
-                    look_for_keys=False
+                    look_for_keys=False,
+                    banner_timeout=30
                 )
             
             # Create SFTP client
@@ -104,8 +105,13 @@ class PaycomSFTPService:
             
         except paramiko.AuthenticationException as e:
             logger.error(f"SFTP authentication failed: {e}")
-            logger.error(f"Credentials used - Host: {self.host}, Username: {self.username}, Password length: {len(self.password) if self.password else 0}")
-            raise PaycomSFTPError(f"SFTP authentication failed. Please verify your credentials. Error: {e}")
+            logger.error(f"Credentials used - Host: {self.host}:{self.port}, Username: {self.username}, Password length: {len(self.password) if self.password else 0}")
+            logger.error(f"Please verify:")
+            logger.error(f"  1. Username is correct: {self.username}")
+            logger.error(f"  2. Password is correct (length: {len(self.password) if self.password else 0} chars)")
+            logger.error(f"  3. Account is active and not locked")
+            logger.error(f"  4. IP address is whitelisted (if required by Paycom)")
+            raise PaycomSFTPError(f"SFTP authentication failed. Please verify your credentials are correct. Username: {self.username}, Host: {self.host}:{self.port}. Error: {e}")
         except paramiko.SSHException as e:
             logger.error(f"SFTP SSH error: {e}")
             raise PaycomSFTPError(f"SFTP connection failed: {e}")
