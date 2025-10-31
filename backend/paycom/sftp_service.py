@@ -104,14 +104,36 @@ class PaycomSFTPService:
             return sftp_client
             
         except paramiko.AuthenticationException as e:
+            # Try to get the actual outbound IP address
+            outbound_ip = "unknown"
+            try:
+                import urllib.request
+                import json
+                response = urllib.request.urlopen('https://api.ipify.org?format=json', timeout=5)
+                data = json.loads(response.read().decode())
+                outbound_ip = data.get('ip', 'unknown')
+            except Exception:
+                # Fallback to socket method
+                try:
+                    import socket
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    s.connect(("8.8.8.8", 80))
+                    outbound_ip = s.getsockname()[0]
+                    s.close()
+                except:
+                    pass
+            
             logger.error(f"SFTP authentication failed: {e}")
             logger.error(f"Credentials used - Host: {self.host}:{self.port}, Username: {self.username}, Password length: {len(self.password) if self.password else 0}")
+            logger.error(f"Railway outbound IP address: {outbound_ip}")
+            logger.error(f"This IP needs to be whitelisted with Paycom for SFTP access")
             logger.error(f"Please verify:")
             logger.error(f"  1. Username is correct: {self.username}")
             logger.error(f"  2. Password is correct (length: {len(self.password) if self.password else 0} chars)")
             logger.error(f"  3. Account is active and not locked")
-            logger.error(f"  4. IP address is whitelisted (if required by Paycom)")
-            raise PaycomSFTPError(f"SFTP authentication failed. Please verify your credentials are correct. Username: {self.username}, Host: {self.host}:{self.port}. Error: {e}")
+            logger.error(f"  4. IP address {outbound_ip} is whitelisted with Paycom")
+            logger.error(f"  5. Contact Paycom support to whitelist Railway's outbound IP addresses")
+            raise PaycomSFTPError(f"SFTP authentication failed on Railway. Credentials work locally. This is an IP whitelisting issue. Railway outbound IP: {outbound_ip}. Please contact Paycom to whitelist this IP address for SFTP access. Error: {e}")
         except paramiko.SSHException as e:
             logger.error(f"SFTP SSH error: {e}")
             raise PaycomSFTPError(f"SFTP connection failed: {e}")
