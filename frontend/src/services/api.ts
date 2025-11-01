@@ -4,7 +4,7 @@ import { API_BASE_URL } from '../config';
 // Create axios instance with default configuration
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 180000, // 3 minutes timeout for long-running operations like Paycom sync
   headers: {
     'Content-Type': 'application/json',
   },

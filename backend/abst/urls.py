@@ -24,16 +24,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.common import no_append_slash
 from rest_framework.routers import DefaultRouter
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.core.management import call_command
-from io import StringIO
-from datetime import datetime
-import logging
-import traceback
-
-logger = logging.getLogger(__name__)
-
 from adls.views import ADLViewSet, WeeklyADLEntryViewSet, WeeklyADLSummaryViewSet
 from residents.views import ResidentViewSet, FacilityViewSet, FacilitySectionViewSet
 from users.views import UserViewSet, FacilityAccessViewSet
@@ -42,20 +32,9 @@ from scheduling.views import (
     StaffAvailabilityViewSet, AIInsightViewSet, AIRecommendationViewSet,
     SchedulingDashboardViewSet, TimeTrackingViewSet, WeeklyHoursSummaryViewSet
 )
-try:
-    from paycom.views import (
-        PaycomEmployeeViewSet, PaycomSyncLogViewSet, PaycomFileViewSet, PaycomSyncViewSet
-    )
-    PAYCOM_AVAILABLE = True
-    logger.info("Paycom ViewSets imported successfully")
-except Exception as e:
-    # If Paycom app is not available (e.g., migrations not run), disable Paycom URLs
-    PAYCOM_AVAILABLE = False
-    logger.warning(f"Paycom ViewSets not available: {e}")
-    PaycomEmployeeViewSet = None
-    PaycomSyncLogViewSet = None
-    PaycomFileViewSet = None
-    PaycomSyncViewSet = None
+from paycom.views import (
+    PaycomEmployeeViewSet, PaycomSyncLogViewSet, PaycomFileViewSet, PaycomSyncViewSet
+)
 
 router = DefaultRouter()
 router.register(r'adls', ADLViewSet)
@@ -76,11 +55,10 @@ router.register(r'scheduling/ai-recommendations', AIRecommendationViewSet)
 router.register(r'scheduling/dashboard', SchedulingDashboardViewSet, basename='scheduling-dashboard')
 router.register(r'scheduling/time-tracking', TimeTrackingViewSet)
 router.register(r'scheduling/weekly-hours-summary', WeeklyHoursSummaryViewSet)
-if PAYCOM_AVAILABLE:
-    router.register(r'paycom/employees', PaycomEmployeeViewSet, basename='paycom-employees')
-    router.register(r'paycom/sync-logs', PaycomSyncLogViewSet, basename='paycom-sync-logs')
-    router.register(r'paycom/files', PaycomFileViewSet, basename='paycom-files')
-    router.register(r'paycom/sync', PaycomSyncViewSet, basename='paycom-sync')
+router.register(r'paycom/employees', PaycomEmployeeViewSet, basename='paycom-employees')
+router.register(r'paycom/sync-logs', PaycomSyncLogViewSet, basename='paycom-sync-logs')
+router.register(r'paycom/files', PaycomFileViewSet, basename='paycom-files')
+router.register(r'paycom/sync', PaycomSyncViewSet, basename='paycom-sync')
 
 @csrf_exempt
 def healthcheck(request):
@@ -97,58 +75,9 @@ def root_ok(request):
     # This is used by Railway health checks
     return HttpResponse('OK', content_type='text/plain', status=200)
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def run_migrations(request):
-    """
-    Standalone API endpoint to run migrations (always available, doesn't depend on Paycom imports)
-    """
-    try:
-        logger.info("Running migrations via API endpoint")
-        
-        # Capture migration output
-        output = StringIO()
-        
-        # Run migrations and capture output
-        call_command('migrate', verbosity=2, stdout=output)
-        migration_output = output.getvalue()
-        logger.info(f"Migration output: {migration_output}")
-        
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Migrations completed successfully',
-            'output': migration_output,
-            'timestamp': str(datetime.now())
-        })
-        
-    except Exception as e:
-        logger.error(f"Migration failed via API endpoint: {str(e)}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        
-        return JsonResponse({
-            'status': 'error',
-            'message': f'Migration failed: {str(e)}',
-            'error_details': str(e),
-            'timestamp': str(datetime.now())
-        }, status=500)
-
 urlpatterns = [
     path("", root_ok, name="root_ok"),  # Minimal root endpoint for Railway
     path("admin/", admin.site.urls),
     path("api/", include(router.urls)),
     path("health/", healthcheck, name="healthcheck"),
-    path("api/paycom/run-migrations/", run_migrations, name="run_migrations"),  # Always available, standalone endpoint
 ]
-
-# Include Paycom URLs if available
-if PAYCOM_AVAILABLE:
-    try:
-        from paycom import urls as paycom_urls
-        urlpatterns.append(path("api/paycom/", include(paycom_urls.urlpatterns)))
-        logger.info("Paycom URLs included successfully")
-    except Exception as e:
-        logger.warning(f"Could not include Paycom URLs: {e}")
-        import traceback
-        logger.warning(f"Traceback: {traceback.format_exc()}")
-else:
-    logger.warning("Paycom URLs not included because PAYCOM_AVAILABLE is False")
