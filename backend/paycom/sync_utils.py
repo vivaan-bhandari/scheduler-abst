@@ -59,9 +59,10 @@ def sync_paycom_to_staff():
                         # Update existing Staff record
                         existing_staff.first_name = paycom_emp.first_name
                         existing_staff.last_name = paycom_emp.last_name
-                        existing_staff.role = staff_role  # CRITICAL: Update role
+                        # CRITICAL: Update role if it changed
                         if existing_staff.role != staff_role:
-                            logger.warning(f"Updating role for existing Staff {paycom_emp.employee_id}: '{existing_staff.role}' -> '{staff_role}'")
+                            logger.warning(f"Updating role for existing Staff {paycom_emp.employee_id}: '{existing_staff.role}' -> '{staff_role}' (position: {position_info})")
+                        existing_staff.role = staff_role  # CRITICAL: Update role
                         existing_staff.status = 'active'  # Ensure active status
                         existing_staff.max_hours = paycom_emp.max_hours_per_week
                         existing_staff.facility = facility
