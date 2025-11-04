@@ -189,7 +189,9 @@ def sync_paycom_to_staff():
                     logger.error(f"Failed to update Staff record for Paycom employee {paycom_emp.employee_id}: {e}")
                     error_count += 1
             
-            logger.info(f"Sync completed: {created_count} created, {updated_count} updated, {error_count} errors")
+            logger.info("=" * 80)
+            logger.info(f"Staff sync COMPLETED: {created_count} created, {updated_count} updated, {error_count} errors")
+            logger.info("=" * 80)
             
             return {
                 'success': True,
