@@ -48,9 +48,14 @@ const PaycomEmployeeList = () => {
     statuses: ['active', 'inactive', 'terminated', 'on_leave']
   });
 
+  // Fetch filter options once on mount
+  useEffect(() => {
+    fetchFilterOptions();
+  }, []); // Only run once on mount
+
+  // Fetch employees when filters/pagination change
   useEffect(() => {
     fetchEmployees();
-    fetchFilterOptions();
   }, [currentPage, pageSize, searchTerm, filters, selectedWeek]);
 
   // Check if selected week is in the future or has no data
