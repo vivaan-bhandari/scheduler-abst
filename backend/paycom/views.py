@@ -161,19 +161,18 @@ class PaycomSyncViewSet(viewsets.ReadOnlyModelViewSet):
                 logger.error(f"Background sync failed: {str(e)}")
                 logger.error(f"Traceback: {traceback.format_exc()}")
         
-        try:
-            logger.info("Starting Paycom sync via ViewSet action (async)")
-            
-            # Start sync in background thread to avoid timeout
-            sync_thread = threading.Thread(target=run_sync, daemon=True)
-            sync_thread.start()
-            
-            # Return immediately - sync runs in background
-            return Response({
-                'status': 'success',
-                'message': 'Paycom sync started in background. Check sync logs for progress.',
-                'timestamp': str(datetime.now())
-            })
+        logger.info("Starting Paycom sync via ViewSet action (async)")
+        
+        # Start sync in background thread to avoid timeout
+        sync_thread = threading.Thread(target=run_sync, daemon=True)
+        sync_thread.start()
+        
+        # Return immediately - sync runs in background
+        return Response({
+            'status': 'success',
+            'message': 'Paycom sync started in background. Check sync logs for progress.',
+            'timestamp': str(datetime.now())
+        })
     
     @action(detail=False, methods=['post'])
     def sync_staff(self, request):
