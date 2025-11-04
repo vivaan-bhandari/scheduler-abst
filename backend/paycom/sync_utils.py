@@ -115,12 +115,15 @@ def sync_paycom_to_staff():
                     logger.error(f"Failed to create Staff record for Paycom employee {paycom_emp.employee_id}: {e}")
                     error_count += 1
             
-            # Update existing Staff records with Paycom data
+            # Update existing Staff records with Paycom data (including facility correction)
             paycom_employees_with_staff = PaycomEmployee.objects.filter(staff__isnull=False)
             
             for paycom_emp in paycom_employees_with_staff:
                 try:
                     staff = paycom_emp.staff
+                    
+                    # Get correct facility for this employee
+                    correct_facility = get_or_create_facility_for_employee(paycom_emp)
                     
                     # Update Staff record with latest Paycom data
                     staff.first_name = paycom_emp.first_name
@@ -128,6 +131,12 @@ def sync_paycom_to_staff():
                     staff.email = paycom_emp.work_email or staff.email
                     staff.status = paycom_emp.status
                     staff.max_hours = paycom_emp.max_hours_per_week
+                    
+                    # IMPORTANT: Update facility if it's wrong (fixes Veronica issue)
+                    if correct_facility and staff.facility != correct_facility:
+                        logger.warning(f"Correcting facility for {paycom_emp.employee_id} ({paycom_emp.first_name} {paycom_emp.last_name}): {staff.facility.name} -> {correct_facility.name}")
+                        staff.facility = correct_facility
+                    
                     staff.updated_at = timezone.now()
                     
                     # Update notes with sync timestamp
@@ -217,50 +226,59 @@ def map_paycom_role_to_staff_role(paycom_employee):
 def get_or_create_facility_for_employee(paycom_employee):
     """
     Map Paycom employee to existing Facility based on location description
+    Uses facility_mapping.py for consistent mapping
     """
-    # Location mapping from Paycom to existing facilities
-    location_mapping = {
-        'Buena Vista': 'Buena Vista',
-        'Murray Highland': 'Murray Highland', 
-        'Posada SL': 'La Posada Senior Living',
-        'Markham': 'Markham House Assisted Living',
-        'Arbor MC': 'Mill View Memory Care',
-        'Corporate': 'Buena Vista',  # Map corporate to main facility
-    }
+    from .facility_mapping import get_facility_from_paycom_location
     
     if not paycom_employee.location_description:
-        # Return default facility (Buena Vista as main facility)
-        facility = Facility.objects.filter(name='Buena Vista').first()
-        if facility:
-            return facility
+        logger.warning(f"No location_description for Paycom employee {paycom_employee.employee_id}, cannot assign facility")
+        return None
     
     location_desc = paycom_employee.location_description.strip()
     
-    # Try exact mapping first
-    if location_desc in location_mapping:
-        facility_name = location_mapping[location_desc]
-        facility = Facility.objects.filter(name=facility_name).first()
+    # Use the centralized facility mapping function
+    facility = get_facility_from_paycom_location(location_desc)
+    
+    if facility:
+        logger.info(f"Mapped Paycom location '{location_desc}' to facility: {facility.name}")
+        return facility
+    
+    # Try partial matching as fallback (case-insensitive)
+    location_lower = location_desc.lower()
+    
+    # Try to find facility by partial match in location description
+    if 'posada' in location_lower or 'la posada' in location_lower:
+        facility = Facility.objects.filter(name__icontains='La Posada').first()
         if facility:
-            logger.info(f"Mapped {location_desc} to existing facility: {facility.name}")
+            logger.info(f"Mapped '{location_desc}' to facility via partial match: {facility.name}")
             return facility
     
-    # Try partial matching as fallback
-    facility = Facility.objects.filter(
-        name__icontains=location_desc
-    ).first()
+    if 'markham' in location_lower:
+        facility = Facility.objects.filter(name__icontains='Markham').first()
+        if facility:
+            logger.info(f"Mapped '{location_desc}' to facility via partial match: {facility.name}")
+            return facility
     
-    if facility:
-        logger.info(f"Mapped {location_desc} to existing facility (partial match): {facility.name}")
-        return facility
+    if 'arbor' in location_lower or 'mill view' in location_lower or 'mv' in location_lower:
+        facility = Facility.objects.filter(name__icontains='Mill View').first()
+        if facility:
+            logger.info(f"Mapped '{location_desc}' to facility via partial match: {facility.name}")
+            return facility
     
-    # If no match found, use Buena Vista as default
-    facility = Facility.objects.filter(name='Buena Vista').first()
-    if facility:
-        logger.warning(f"No facility mapping found for '{location_desc}', using default: {facility.name}")
-        return facility
+    if 'buena vista' in location_lower or 'bv' in location_lower:
+        facility = Facility.objects.filter(name__icontains='Buena Vista').first()
+        if facility:
+            logger.info(f"Mapped '{location_desc}' to facility via partial match: {facility.name}")
+            return facility
     
-    # Last resort - this shouldn't happen if facilities exist
-    logger.error(f"No facilities found in system! Paycom location: {location_desc}")
+    if 'murray' in location_lower or 'highland' in location_lower:
+        facility = Facility.objects.filter(name__icontains='Murray Highland').first()
+        if facility:
+            logger.info(f"Mapped '{location_desc}' to facility via partial match: {facility.name}")
+            return facility
+    
+    # If no match found, log error and return None (don't default to Buena Vista)
+    logger.error(f"No facility mapping found for Paycom location '{location_desc}' (employee {paycom_employee.employee_id}). Employee will not be synced to Staff.")
     return None
 
 
