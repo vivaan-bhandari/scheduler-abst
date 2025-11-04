@@ -374,54 +374,26 @@ class ShiftViewSet(viewsets.ModelViewSet):
         
         week_end_date = week_start_date + timedelta(days=6)
         
-        # Delete existing shifts for the week
+        # Delete existing shifts for the week (and their assignments)
         existing_shifts = self.get_queryset().filter(
             facility=facility,
             date__gte=week_start_date,
             date__lte=week_end_date
         )
         shifts_deleted = existing_shifts.count()
+        
+        # Also delete all assignments for these shifts
+        from .models import StaffAssignment
+        shift_ids = list(existing_shifts.values_list('id', flat=True))
+        assignments_deleted = StaffAssignment.objects.filter(shift_id__in=shift_ids).delete()[0]
+        
+        # Delete the shifts
         existing_shifts.delete()
         
-        # Create empty placeholder shifts to maintain grid structure
-        shift_types = ['day', 'swing', 'noc']
-        shifts_created = 0
-        
-        # Get or create shift templates for each shift type
-        shift_templates = {}
-        for shift_type in shift_types:
-            template, created = ShiftTemplate.objects.get_or_create(
-                facility=facility,
-                shift_type=shift_type,
-                defaults={
-                    'template_name': f'{shift_type.title()} Shift',
-                    'start_time': '08:00' if shift_type == 'day' else '16:00' if shift_type == 'swing' else '00:00',
-                    'end_time': '16:00' if shift_type == 'day' else '00:00' if shift_type == 'swing' else '08:00',
-                    'duration': 8.0,
-                    'required_staff': 0,  # Start with 0 staff
-                    'is_active': True
-                }
-            )
-            shift_templates[shift_type] = template
-        
-        # Create empty shifts for each day and shift type
-        for i in range(7):
-            current_date = week_start_date + timedelta(days=i)
-            
-            for shift_type in shift_types:
-                shift = Shift.objects.create(
-                    date=current_date,
-                    shift_template=shift_templates[shift_type],
-                    facility=facility,
-                    required_staff_count=0,  # Empty shift
-                    required_staff_role='cna'
-                )
-                shifts_created += 1
-        
         return Response({
-            'message': f'Cleared {shifts_deleted} shifts and created {shifts_created} empty placeholder shifts to maintain grid structure.',
+            'message': f'Cleared {shifts_deleted} shifts and {assignments_deleted} assignments for the week. Grid will show empty.',
             'shifts_deleted': shifts_deleted,
-            'shifts_created': shifts_created,
+            'assignments_deleted': assignments_deleted,
             'week_start': week_start_date.isoformat(),
             'week_end': week_end_date.isoformat()
         })

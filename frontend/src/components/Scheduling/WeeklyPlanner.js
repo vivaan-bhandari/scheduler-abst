@@ -45,7 +45,6 @@ import {
   Close as CloseIcon,
   FileDownload as FileDownloadIcon,
   Print as PrintIcon,
-  AutoFixHigh as AutoFillIcon,
   Edit as EditIcon,
   Search as SearchIcon,
   CheckCircle as CheckIcon,
@@ -57,7 +56,6 @@ import {
   People as PeopleIcon,
   Refresh as RefreshIcon,
   Delete as DeleteIcon,
-  CalendarToday as CalendarTodayIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
@@ -268,137 +266,67 @@ const WeeklyPlanner = forwardRef(({ facilityId, refreshTrigger }, ref) => {
     });
   };
 
-  const handleAutoFill = async () => {
-    const weekStart = getWeekStart();
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-      
-      const weekShifts = shifts.filter(shift => {
-        const shiftDate = new Date(shift.date);
-        return shiftDate >= new Date(weekStart) && shiftDate <= weekEnd;
-      });
-      
-      if (weekShifts.length === 0) {
-        setSnackbar({ 
-          open: true, 
-          message: 'No shifts found for this week', 
-          severity: 'info' 
-        });
-        return;
-      }
-      
-      let assignmentsCreated = 0;
-      for (const shift of weekShifts) {
-      // Only count assignments with active staff
-      const currentAssignments = assignments.filter(a => {
-        const assignmentShiftId = typeof a.shift === 'object' ? a.shift?.id : a.shift;
-        if (assignmentShiftId !== shift.id) return false;
-        const assignmentStaffId = typeof a.staff === 'object' ? a.staff?.id : a.staff;
-        const staffMember = staff.find(s => s.id === assignmentStaffId);
-        return staffMember && staffMember.status === 'active';
-      });
-      const needed = shift.required_staff_count - currentAssignments.length;
-      
-      if (needed <= 0) continue;
-
-          const availableStaff = staff.filter(member => {
-        const alreadyAssigned = assignments.some(a => {
-          const assignmentShiftId = typeof a.shift === 'object' ? a.shift?.id : a.shift;
-          const assignmentStaffId = typeof a.staff === 'object' ? a.staff?.id : a.staff;
-          return assignmentShiftId === shift.id && assignmentStaffId === member.id;
-        });
-            if (alreadyAssigned) return false;
-            
-            const staffAssignments = getAssignmentsForStaff(member.id);
-            // Calculate actual hours from shift templates
-            const hoursUsed = staffAssignments.reduce((total, assignment) => {
-              const shiftId = typeof assignment.shift === 'object' ? assignment.shift?.id : assignment.shift;
-              const shift = shifts.find(s => s.id === shiftId);
-              if (shift && shift.shift_template) {
-                // Calculate hours from shift template
-                const startTime = new Date(`1970-01-01T${shift.shift_template.start_time}`);
-                const endTime = new Date(`1970-01-01T${shift.shift_template.end_time}`);
-                const hours = (endTime - startTime) / (1000 * 60 * 60);
-                return total + hours;
-              }
-              return total;
-            }, 0);
-            return hoursUsed < member.max_hours;
-          });
-          
-      for (let i = 0; i < Math.min(needed, availableStaff.length); i++) {
-        try {
-          // Check for daily hours conflict before making assignment
-          const hasConflict = checkDailyHoursConflict(availableStaff[i].id, shift.id, null, null);
-          
-          if (hasConflict) {
-            console.log(`⚠️ Skipping ${availableStaff[i].full_name} - would work 8+ hours on ${new Date(shift.date).toLocaleDateString()}`);
-            continue; // Skip this staff member
-          }
-          
-          await api.post(`/api/scheduling/assignments/`, {
-            shift: shift.id,
-            staff: availableStaff[i].id
-          });
-              assignmentsCreated++;
-            } catch (error) {
-          console.error('Error creating assignment:', error);
-          }
-        }
-      }
-      
-      if (assignmentsCreated > 0) {
-        setSnackbar({ 
-          open: true, 
-          message: `Auto-fill completed! Created ${assignmentsCreated} assignments.`, 
-          severity: 'success' 
-        });
-        fetchData();
-      } else {
-        setSnackbar({ 
-          open: true, 
-          message: 'No new assignments could be created. All shifts may be filled or no staff available.', 
-          severity: 'info' 
-      });
-    }
-  };
-
   const handleClearAssignments = async () => {
     const weekStart = getWeekStart();
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-      
-      const weekAssignments = assignments.filter(assignment => {
-        const shift = shifts.find(s => s.id === assignment.shift);
-        if (!shift) return false;
-        
-        const assignmentDate = new Date(shift.date);
-        return assignmentDate >= new Date(weekStart) && assignmentDate <= weekEnd;
-      });
-      
-      if (weekAssignments.length === 0) {
-        setSnackbar({ 
-          open: true, 
-          message: 'No assignments to clear for this week', 
-          severity: 'info' 
-        });
-        return;
-      }
-      
-    for (const assignment of weekAssignments) {
-      try {
-        await api.delete(`/api/scheduling/assignments/${assignment.id}/`);
-      } catch (error) {
-        console.error('Error removing assignment:', error);
-      }
-    }
-      
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    
+    // Get shift IDs for the week
+    const weekShiftIds = shifts
+      .filter(shift => {
+        const shiftDate = new Date(shift.date);
+        return shiftDate >= new Date(weekStart) && shiftDate <= weekEnd;
+      })
+      .map(shift => shift.id);
+    
+    // Filter assignments for the week - handle both object and ID shift formats
+    const weekAssignments = assignments.filter(assignment => {
+      const shiftId = typeof assignment.shift === 'object' ? assignment.shift?.id : assignment.shift;
+      return shiftId && weekShiftIds.includes(shiftId);
+    });
+    
+    if (weekAssignments.length === 0) {
       setSnackbar({ 
         open: true, 
-        message: `Schedule cleared successfully! Removed ${weekAssignments.length} assignments.`, 
+        message: 'No assignments to clear for this week', 
+        severity: 'info' 
+      });
+      return;
+    }
+    
+    let deletedCount = 0;
+    let errorCount = 0;
+    
+    for (const assignment of weekAssignments) {
+      try {
+        const assignmentId = assignment.id;
+        if (!assignmentId) {
+          console.error('Assignment missing ID:', assignment);
+          errorCount++;
+          continue;
+        }
+        await api.delete(`/api/scheduling/assignments/${assignmentId}/`);
+        deletedCount++;
+      } catch (error) {
+        console.error('Error removing assignment:', error);
+        errorCount++;
+      }
+    }
+    
+    if (errorCount > 0) {
+      setSnackbar({ 
+        open: true, 
+        message: `Cleared ${deletedCount} assignments. ${errorCount} failed.`, 
+        severity: 'warning' 
+      });
+    } else {
+      setSnackbar({ 
+        open: true, 
+        message: `Schedule cleared successfully! Removed ${deletedCount} assignments.`, 
         severity: 'success' 
       });
-      fetchData();
+    }
+    fetchData();
   };
 
   const handleClearAllShifts = async () => {
@@ -1097,13 +1025,111 @@ const WeeklyPlanner = forwardRef(({ facilityId, refreshTrigger }, ref) => {
   });
 
   const handleExportCSV = () => {
-    // CSV export logic
-    setSnackbar({ open: true, message: 'CSV export functionality coming soon', severity: 'info' });
-  };
-
-  const handleExportICS = () => {
-    // ICS export logic
-    setSnackbar({ open: true, message: 'ICS export functionality coming soon', severity: 'info' });
+    try {
+      const weekStart = getWeekStart();
+      const weekDays = getWeekDays();
+      
+      // Build CSV data
+      const csvRows = [];
+      csvRows.push(['Date', 'Shift Type', 'Start Time', 'End Time', 'Role', 'Required Staff', 'Assigned Staff', 'Staff Name', 'Staff Role']);
+      
+      // Group shifts by date and shift type
+      weekDays.forEach(day => {
+        const dayShifts = shifts.filter(shift => {
+          const shiftDate = new Date(shift.date).toDateString();
+          const dayDate = day.toDateString();
+          return shiftDate === dayDate;
+        });
+        
+        if (dayShifts.length === 0) {
+          // Add empty row for days with no shifts
+          csvRows.push([
+            day.toLocaleDateString(),
+            '', '', '', '', '', '', '', ''
+          ]);
+        } else {
+          dayShifts.forEach(shift => {
+            const shiftAssignments = getAssignmentsForShift(shift.id);
+            const shiftType = shift.shift_template?.shift_type || shift.shift_type || 'Unknown';
+            const startTime = shift.shift_template?.start_time || shift.start_time || '';
+            const endTime = shift.shift_template?.end_time || shift.end_time || '';
+            const role = shift.required_staff_role || 'N/A';
+            const required = shift.required_staff_count || 0;
+            
+            if (shiftAssignments.length === 0) {
+              // Shift with no assignments
+              csvRows.push([
+                day.toLocaleDateString(),
+                shiftType.toUpperCase(),
+                startTime,
+                endTime,
+                role,
+                required,
+                0,
+                '',
+                ''
+              ]);
+            } else {
+              // One row per assignment
+              shiftAssignments.forEach(assignment => {
+                const staffId = typeof assignment.staff === 'object' ? assignment.staff?.id : assignment.staff;
+                const staffMember = staff.find(s => s.id === staffId);
+                const staffName = staffMember ? `${staffMember.first_name} ${staffMember.last_name}` : 'Unknown';
+                const staffRole = staffMember?.role || 'N/A';
+                
+                csvRows.push([
+                  day.toLocaleDateString(),
+                  shiftType.toUpperCase(),
+                  startTime,
+                  endTime,
+                  role,
+                  required,
+                  shiftAssignments.length,
+                  staffName,
+                  staffRole
+                ]);
+              });
+            }
+          });
+        }
+      });
+      
+      // Convert to CSV string
+      const csvContent = csvRows.map(row => 
+        row.map(cell => {
+          // Escape cells that contain commas or quotes
+          const cellStr = String(cell || '');
+          if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+            return `"${cellStr.replace(/"/g, '""')}"`;
+          }
+          return cellStr;
+        }).join(',')
+      ).join('\n');
+      
+      // Create download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `schedule_${weekStart}_${facilityId}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setSnackbar({ 
+        open: true, 
+        message: 'CSV export completed successfully', 
+        severity: 'success' 
+      });
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      setSnackbar({ 
+        open: true, 
+        message: `Error exporting CSV: ${error.message}`, 
+        severity: 'error' 
+      });
+    }
   };
 
   const handleConfirmationDialog = (title, message, onConfirm, onCancel) => {
@@ -1580,17 +1606,6 @@ const WeeklyPlanner = forwardRef(({ facilityId, refreshTrigger }, ref) => {
           <Button
             variant="outlined"
             size="small"
-            onClick={handleAutoFill}
-            disabled={loading}
-            startIcon={<AutoFillIcon />}
-            sx={{ borderRadius: 2, fontSize: '0.8rem' }}
-          >
-            AutoFill
-          </Button>
-          
-          <Button
-            variant="outlined"
-            size="small"
             onClick={handleClearAssignments}
             disabled={loading}
             startIcon={<ClearIcon />}
@@ -1630,17 +1645,6 @@ const WeeklyPlanner = forwardRef(({ facilityId, refreshTrigger }, ref) => {
             sx={{ borderRadius: 2, fontSize: '0.8rem' }}
           >
             Export CSV
-          </Button>
-          
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleExportICS}
-            disabled={loading}
-            startIcon={<CalendarTodayIcon />}
-            sx={{ borderRadius: 2, fontSize: '0.8rem' }}
-          >
-            Export ICS
           </Button>
           </Box>
         </Box>
