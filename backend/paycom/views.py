@@ -48,15 +48,34 @@ class PaycomEmployeeViewSet(viewsets.ReadOnlyModelViewSet):
     
     @action(detail=False, methods=['get'])
     def facility_options(self, request):
-        """Get list of unique facilities from Paycom employees"""
+        """Get list of unique facilities from Paycom employees (mapped to actual facility names)"""
         try:
-            # Get unique location descriptions as facilities
-            facilities = PaycomEmployee.objects.values_list('location_description', flat=True).distinct().exclude(location_description='')
+            from .facility_mapping import get_facility_name_from_paycom_location
+            
+            # Get unique location descriptions from Paycom employees
+            locations = PaycomEmployee.objects.values_list('location_description', flat=True).distinct().exclude(location_description='').exclude(location_description__isnull=True)
+            
+            # Map to facility names and get unique values
+            facilities_set = set()
+            for location in locations:
+                if location:
+                    facility_name = get_facility_name_from_paycom_location(location)
+                    if facility_name:
+                        facilities_set.add(facility_name)
+                    else:
+                        # If no mapping found, use the location as-is
+                        facilities_set.add(location.strip())
+            
+            # Return sorted unique facility names
+            facilities = sorted(list(facilities_set))
             return Response({
-                'facilities': list(facilities)
+                'facilities': facilities
             })
-        except Exception:
-            # Table doesn't exist yet
+        except Exception as e:
+            # Table doesn't exist yet or other error
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error getting facility options: {e}")
             return Response({
                 'facilities': []
             })
