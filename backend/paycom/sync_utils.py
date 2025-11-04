@@ -78,7 +78,7 @@ def sync_paycom_to_staff():
                         continue
                     
                     try:
-                    staff = Staff.objects.create(
+                        staff = Staff.objects.create(
                         first_name=paycom_emp.first_name,
                         last_name=paycom_emp.last_name,
                         email=email,
