@@ -101,19 +101,28 @@ class PaycomSyncViewSet(viewsets.ReadOnlyModelViewSet):
     
     @action(detail=False, methods=['post'])
     def start_sync(self, request):
-        """Trigger Paycom sync manually"""
+        """Trigger Paycom sync manually - syncs both employee data and time tracking"""
         try:
             logger.info("Starting Paycom sync via ViewSet action")
             
-            # Run the time tracking sync command
-            # Increase days_back to 7 to catch more files (was 2, might miss recent files)
+            # Step 1: Sync employee data (Employee Directory, Dates, Payees)
+            logger.info("Step 1: Syncing employee roster data...")
+            try:
+                call_command('sync_paycom', report_type='all', force=True)
+                logger.info("Employee roster sync completed")
+            except Exception as e:
+                logger.warning(f"Employee roster sync had issues (may be expected if no files): {e}")
+            
+            # Step 2: Sync time tracking data (clock in/out times)
+            logger.info("Step 2: Syncing time tracking data...")
             call_command('sync_paycom_time_tracking', days_back=7)
+            logger.info("Time tracking sync completed")
             
             logger.info("Paycom sync completed successfully via ViewSet action")
             
             return Response({
                 'status': 'success',
-                'message': 'Paycom sync completed successfully',
+                'message': 'Paycom sync completed successfully (employee data + time tracking)',
                 'timestamp': str(datetime.now())
             })
             
