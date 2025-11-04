@@ -198,15 +198,18 @@ def map_paycom_role_to_staff_role(paycom_employee):
         position_lower = position.lower()
         
         # Map common Paycom positions to Staff roles
+        # IMPORTANT: Check MedTech BEFORE Caregiver (for "MedTech/Caregiver" positions)
         if 'nurse' in position_lower or 'rn' in position_lower:
             return 'rn'
         elif 'lpn' in position_lower or 'licensed practical' in position_lower:
             return 'lpn'
         elif 'cna' in position_lower or 'certified nursing' in position_lower:
             return 'cna'
-        elif 'medication' in position_lower or 'med tech' in position_lower:
+        elif 'medtech' in position_lower or 'med tech' in position_lower or 'medication' in position_lower:
+            # Match "MedTech", "Med Tech", "MedTech/Caregiver", "Medication Technician", etc.
             return 'med_tech'
-        elif 'caregiver' in position_lower or 'care' in position_lower:
+        elif 'caregiver' in position_lower:
+            # Only match standalone "caregiver", not "MedTech/Caregiver" (handled above)
             return 'caregiver'
         elif 'float' in position_lower:
             return 'cna_float'
