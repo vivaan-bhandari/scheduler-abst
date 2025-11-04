@@ -1014,6 +1014,14 @@ const WeeklyPlanner = forwardRef(({ facilityId, refreshTrigger }, ref) => {
     return staffAssignments;
   };
 
+  const getAssignmentsForShift = (shiftId) => {
+    const shiftAssignments = assignments.filter(assignment => {
+      const assignmentShiftId = typeof assignment.shift === 'object' ? assignment.shift?.id : assignment.shift;
+      return assignmentShiftId === shiftId;
+    });
+    return shiftAssignments;
+  };
+
   const filteredStaff = staff.filter(member => {
     // Only show active staff (not inactive, terminated, or on_leave)
     const isActive = member.status === 'active';
