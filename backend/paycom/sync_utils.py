@@ -40,6 +40,26 @@ def sync_paycom_to_staff():
                         error_count += 1
                         continue
                     
+                    # Check if Staff already exists by employee_id (to avoid duplicates)
+                    existing_staff = Staff.objects.filter(employee_id=paycom_emp.employee_id).first()
+                    if existing_staff:
+                        # Link existing Staff to Paycom employee
+                        paycom_emp.staff = existing_staff
+                        paycom_emp.save()
+                        
+                        # Update existing Staff record
+                        existing_staff.first_name = paycom_emp.first_name
+                        existing_staff.last_name = paycom_emp.last_name
+                        existing_staff.status = paycom_emp.status
+                        existing_staff.max_hours = paycom_emp.max_hours_per_week
+                        existing_staff.facility = facility
+                        existing_staff.save()
+                        
+                        updated_count += 1
+                        synced_count += 1
+                        logger.info(f"Updated existing Staff record for Paycom employee {paycom_emp.employee_id}")
+                        continue
+                    
                     # Create Staff record - handle duplicate emails
                     email = paycom_emp.work_email or f"{paycom_emp.employee_id}@company.com"
                     

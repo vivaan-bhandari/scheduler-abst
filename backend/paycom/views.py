@@ -18,6 +18,7 @@ from .models import PaycomEmployee
 from .serializers import PaycomEmployeeSerializer
 from .filters import PaycomEmployeeFilter
 from .sftp_service import PaycomSFTPError
+from .sync_utils import sync_paycom_to_staff
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +144,19 @@ class PaycomSyncViewSet(viewsets.ReadOnlyModelViewSet):
                 call_command('sync_paycom_time_tracking', days_back=7)
                 logger.info("Time tracking sync completed")
                 
+                # Step 3: Sync Paycom employees to Staff model (for scheduling)
+                logger.info("Step 3: Syncing Paycom employees to Staff model...")
+                try:
+                    from .sync_utils import sync_paycom_to_staff
+                    sync_result = sync_paycom_to_staff()
+                    if sync_result['success']:
+                        logger.info(f"Staff sync completed: {sync_result['created_count']} created, {sync_result['updated_count']} updated")
+                    else:
+                        logger.warning(f"Staff sync had issues: {sync_result.get('error', 'Unknown error')}")
+                except Exception as e:
+                    logger.error(f"Staff sync failed: {str(e)}")
+                    logger.error(f"Traceback: {traceback.format_exc()}")
+                
                 logger.info("Paycom sync completed successfully in background")
             except Exception as e:
                 logger.error(f"Background sync failed: {str(e)}")
@@ -161,33 +175,39 @@ class PaycomSyncViewSet(viewsets.ReadOnlyModelViewSet):
                 'message': 'Paycom sync started in background. Check sync logs for progress.',
                 'timestamp': str(datetime.now())
             })
+    
+    @action(detail=False, methods=['post'])
+    def sync_staff(self, request):
+        """Manually sync Paycom employees to Staff model (for scheduling)"""
+        try:
+            logger.info("Starting Staff sync via API endpoint")
+            sync_result = sync_paycom_to_staff()
             
-        except PaycomSFTPError as e:
-            logger.error(f"Paycom SFTP error via ViewSet action: {str(e)}")
-            logger.error(f"Traceback: {traceback.format_exc()}")
-            
-            return Response({
-                'status': 'error',
-                'message': f'Sync failed: {str(e)}',
-                'error_type': 'SFTP_ERROR',
-                'timestamp': str(datetime.now())
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            if sync_result['success']:
+                return Response({
+                    'status': 'success',
+                    'message': f'Staff sync completed: {sync_result["created_count"]} created, {sync_result["updated_count"]} updated, {sync_result["error_count"]} errors',
+                    'created_count': sync_result['created_count'],
+                    'updated_count': sync_result['updated_count'],
+                    'error_count': sync_result['error_count'],
+                    'timestamp': str(datetime.now())
+                })
+            else:
+                return Response({
+                    'status': 'error',
+                    'message': f'Staff sync failed: {sync_result.get("error", "Unknown error")}',
+                    'error': sync_result.get('error', 'Unknown error'),
+                    'created_count': sync_result.get('created_count', 0),
+                    'updated_count': sync_result.get('updated_count', 0),
+                    'error_count': sync_result.get('error_count', 0),
+                    'timestamp': str(datetime.now())
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
-            logger.error(f"Paycom sync failed via ViewSet action: {str(e)}")
+            logger.error(f"Staff sync error via API: {str(e)}")
             logger.error(f"Traceback: {traceback.format_exc()}")
-            
-            # Include more error details for debugging
-            error_details = {
-                'error_type': type(e).__name__,
-                'message': str(e),
-                'traceback': traceback.format_exc() if settings.DEBUG else None
-            }
-            
             return Response({
                 'status': 'error',
-                'message': f'Sync failed: {str(e)}',
-                'error_type': 'UNKNOWN_ERROR',
-                'details': error_details,
+                'message': f'Staff sync failed: {str(e)}',
                 'timestamp': str(datetime.now())
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
