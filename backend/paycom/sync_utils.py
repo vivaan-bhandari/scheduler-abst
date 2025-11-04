@@ -51,9 +51,17 @@ def sync_paycom_to_staff():
                         paycom_emp.staff = existing_staff
                         paycom_emp.save()
                         
+                        # Map Paycom role to Staff role
+                        staff_role = map_paycom_role_to_staff_role(paycom_emp)
+                        position_info = paycom_emp.position_description or paycom_emp.position_family or 'N/A'
+                        logger.info(f"Updating existing Staff {paycom_emp.employee_id}: position='{position_info}' -> role='{staff_role}'")
+                        
                         # Update existing Staff record
                         existing_staff.first_name = paycom_emp.first_name
                         existing_staff.last_name = paycom_emp.last_name
+                        existing_staff.role = staff_role  # CRITICAL: Update role
+                        if existing_staff.role != staff_role:
+                            logger.warning(f"Updating role for existing Staff {paycom_emp.employee_id}: '{existing_staff.role}' -> '{staff_role}'")
                         existing_staff.status = 'active'  # Ensure active status
                         existing_staff.max_hours = paycom_emp.max_hours_per_week
                         existing_staff.facility = facility
@@ -136,10 +144,18 @@ def sync_paycom_to_staff():
                     # Map Paycom role to Staff role (in case position changed)
                     staff_role = map_paycom_role_to_staff_role(paycom_emp)
                     
+                    # Log role mapping for debugging
+                    position_info = paycom_emp.position_description or paycom_emp.position_family or 'N/A'
+                    logger.info(f"Mapping role for {paycom_emp.employee_id} ({paycom_emp.first_name} {paycom_emp.last_name}): position='{position_info}' -> role='{staff_role}'")
+                    
                     # Update Staff record with latest Paycom data
                     staff.first_name = paycom_emp.first_name
                     staff.last_name = paycom_emp.last_name
                     staff.email = paycom_emp.work_email or staff.email
+                    
+                    # IMPORTANT: Always update role (fixes MedTech issue)
+                    if staff.role != staff_role:
+                        logger.warning(f"Updating role for {paycom_emp.employee_id}: '{staff.role}' -> '{staff_role}' (position: {position_info})")
                     staff.role = staff_role  # Update role in case position changed (e.g., MedTech/Caregiver -> med_tech)
                     staff.status = 'active'  # Ensure active status (we're only syncing active Paycom employees)
                     staff.max_hours = paycom_emp.max_hours_per_week
