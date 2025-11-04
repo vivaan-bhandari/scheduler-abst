@@ -134,7 +134,7 @@ if DEBUG:
     CORS_ALLOW_HEADERS = ['accept', 'accept-encoding', 'authorization', 'content-type', 'dnt', 'origin', 'user-agent', 'x-csrftoken', 'x-requested-with']
     CORS_EXPOSE_HEADERS = ['content-type', 'content-disposition']
 else:
-    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='https://abst-frontend.vercel.app,https://abst-frontend-git-main-vivaan-bhandari.vercel.app,http://localhost:3000,https://localhost:3000,https://*.railway.app', cast=lambda v: [s.strip() for s in v.split(',')])
+    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='https://scheduler-abst.vercel.app,https://scheduler-abst-git-main-vivaans-projects-baf4d8b2.vercel.app,https://abst-frontend.vercel.app,https://abst-frontend-git-main-vivaan-bhandari.vercel.app,http://localhost:3000,https://localhost:3000,https://*.railway.app', cast=lambda v: [s.strip() for s in v.split(',')])
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']

@@ -108,10 +108,13 @@ class PaycomSyncViewSet(viewsets.ReadOnlyModelViewSet):
             # Step 1: Sync employee data (Employee Directory, Dates, Payees)
             logger.info("Step 1: Syncing employee roster data...")
             try:
-                call_command('sync_paycom', report_type='all', force=True)
+                # Try to sync employee roster, but don't fail if it errors (files might not exist)
+                call_command('sync_paycom', report_type='all', force=True, verbosity=0)
                 logger.info("Employee roster sync completed")
             except Exception as e:
-                logger.warning(f"Employee roster sync had issues (may be expected if no files): {e}")
+                # Log but don't fail - employee roster sync is optional if files don't exist
+                logger.warning(f"Employee roster sync skipped (may be expected if no files): {str(e)}")
+                # Continue with time tracking sync even if employee sync fails
             
             # Step 2: Sync time tracking data (clock in/out times)
             logger.info("Step 2: Syncing time tracking data...")
