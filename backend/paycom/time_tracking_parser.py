@@ -156,8 +156,13 @@ class PaycomTimeTrackingParser:
         )
     
     def _parse_datetime(self, datetime_str: str, default_date: date) -> Optional[datetime]:
-        """Parse datetime string with various formats"""
+        """Parse datetime string with various formats and make timezone-aware"""
         if not datetime_str:
+            return None
+        
+        # Handle invalid dates like 0000-00-00
+        if '0000-00-00' in datetime_str or datetime_str.startswith('0000-00-00'):
+            logger.debug(f"Skipping invalid date: {datetime_str}")
             return None
         
         # Common datetime formats from Paycom
@@ -170,15 +175,22 @@ class PaycomTimeTrackingParser:
             '%H:%M'
         ]
         
+        parsed_dt = None
         for fmt in formats:
             try:
                 if fmt in ['%H:%M:%S', '%H:%M']:
                     # Time only, combine with default date
                     time_part = datetime.strptime(datetime_str, fmt).time()
-                    return datetime.combine(default_date, time_part)
+                    parsed_dt = datetime.combine(default_date, time_part)
                 else:
                     # Full datetime
-                    return datetime.strptime(datetime_str, fmt)
+                    parsed_dt = datetime.strptime(datetime_str, fmt)
+                
+                # Make timezone-aware (Django requires this)
+                if parsed_dt and timezone.is_naive(parsed_dt):
+                    parsed_dt = timezone.make_aware(parsed_dt)
+                
+                return parsed_dt
             except ValueError:
                 continue
         
