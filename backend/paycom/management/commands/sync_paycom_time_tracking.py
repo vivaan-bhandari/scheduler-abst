@@ -149,7 +149,9 @@ class Command(BaseCommand):
                         continue
                     
                     # Download file using existing SFTP connection
-                    local_path = sftp_service.download_file(file_info['filepath'], sftp_client=sftp)
+                    # Extract just the filename from the full path
+                    filename = os.path.basename(file_info['filepath'])
+                    local_path = sftp_service.download_file(filename, sftp_client=sftp)
                     
                     try:
                         # Process the file
