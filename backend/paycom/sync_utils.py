@@ -24,8 +24,12 @@ def sync_paycom_to_staff():
     
     try:
         with transaction.atomic():
-            # Get all Paycom employees that don't have a linked Staff record
-            paycom_employees = PaycomEmployee.objects.filter(staff__isnull=True)
+            # Get all ACTIVE Paycom employees that don't have a linked Staff record
+            # Only sync active employees for scheduling
+            paycom_employees = PaycomEmployee.objects.filter(
+                staff__isnull=True,
+                status='active'  # Only sync active employees
+            )
             
             for paycom_emp in paycom_employees:
                 try:
@@ -74,18 +78,18 @@ def sync_paycom_to_staff():
                         continue
                     
                     try:
-                        staff = Staff.objects.create(
-                            first_name=paycom_emp.first_name,
-                            last_name=paycom_emp.last_name,
-                            email=email,
-                            employee_id=paycom_emp.employee_id,
-                            role=staff_role,
-                            hire_date=paycom_emp.hire_date or timezone.now().date(),
-                            status=paycom_emp.status,
-                            max_hours=paycom_emp.max_hours_per_week,
-                            facility=facility,
-                            notes=f"Synced from Paycom on {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                        )
+                    staff = Staff.objects.create(
+                        first_name=paycom_emp.first_name,
+                        last_name=paycom_emp.last_name,
+                        email=email,
+                        employee_id=paycom_emp.employee_id,
+                        role=staff_role,
+                        hire_date=paycom_emp.hire_date or timezone.now().date(),
+                        status='active',  # Always create as active (we're only syncing active Paycom employees)
+                        max_hours=paycom_emp.max_hours_per_week,
+                        facility=facility,
+                        notes=f"Synced from Paycom on {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                    )
                     except Exception as create_error:
                         # Handle unique constraint violations
                         if 'employee_id' in str(create_error) or 'unique' in str(create_error).lower():
@@ -116,7 +120,11 @@ def sync_paycom_to_staff():
                     error_count += 1
             
             # Update existing Staff records with Paycom data (including facility correction)
-            paycom_employees_with_staff = PaycomEmployee.objects.filter(staff__isnull=False)
+            # Only update active employees
+            paycom_employees_with_staff = PaycomEmployee.objects.filter(
+                staff__isnull=False,
+                status='active'  # Only update active employees
+            )
             
             for paycom_emp in paycom_employees_with_staff:
                 try:
@@ -129,7 +137,7 @@ def sync_paycom_to_staff():
                     staff.first_name = paycom_emp.first_name
                     staff.last_name = paycom_emp.last_name
                     staff.email = paycom_emp.work_email or staff.email
-                    staff.status = paycom_emp.status
+                    staff.status = 'active'  # Ensure active status (we're only syncing active Paycom employees)
                     staff.max_hours = paycom_emp.max_hours_per_week
                     
                     # IMPORTANT: Update facility if it's wrong (fixes Veronica issue)
