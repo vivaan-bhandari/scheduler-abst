@@ -54,7 +54,7 @@ def sync_paycom_to_staff():
                         # Update existing Staff record
                         existing_staff.first_name = paycom_emp.first_name
                         existing_staff.last_name = paycom_emp.last_name
-                        existing_staff.status = paycom_emp.status
+                        existing_staff.status = 'active'  # Ensure active status
                         existing_staff.max_hours = paycom_emp.max_hours_per_week
                         existing_staff.facility = facility
                         existing_staff.save()
