@@ -106,7 +106,8 @@ class PaycomSyncViewSet(viewsets.ReadOnlyModelViewSet):
             logger.info("Starting Paycom sync via ViewSet action")
             
             # Run the time tracking sync command
-            call_command('sync_paycom_time_tracking', days_back=2)
+            # Increase days_back to 7 to catch more files (was 2, might miss recent files)
+            call_command('sync_paycom_time_tracking', days_back=7)
             
             logger.info("Paycom sync completed successfully via ViewSet action")
             
