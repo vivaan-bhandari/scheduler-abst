@@ -246,23 +246,31 @@ def map_paycom_role_to_staff_role(paycom_employee):
     Map Paycom position/role to Staff role
     Uses position_family, position_description, and department_description
     """
-    # Try position_family first
+    # Check both position_family and position_description for MedTech patterns
+    # This ensures we catch MedTech roles even if position_family is generic
+    position_family = (paycom_employee.position_family or '').lower()
+    position_description = (paycom_employee.position_description or '').lower()
+    combined_position = f"{position_family} {position_description}".strip()
+    
+    # Map common Paycom positions to Staff roles
+    # IMPORTANT: Check MedTech BEFORE Caregiver (for "MedTech/Caregiver" positions)
+    # Check both fields for MedTech patterns
+    if 'medtech' in combined_position or 'med tech' in combined_position or 'medication' in combined_position:
+        # Match "MedTech", "Med Tech", "MedTech/Caregiver", "Medication Technician", etc.
+        return 'med_tech'
+    
+    # Use position_family first if available, otherwise position_description
     position = paycom_employee.position_family or paycom_employee.position_description or ''
     
     if position:
         position_lower = position.lower()
         
-        # Map common Paycom positions to Staff roles
-        # IMPORTANT: Check MedTech BEFORE Caregiver (for "MedTech/Caregiver" positions)
         if 'nurse' in position_lower or 'rn' in position_lower:
             return 'rn'
         elif 'lpn' in position_lower or 'licensed practical' in position_lower:
             return 'lpn'
         elif 'cna' in position_lower or 'certified nursing' in position_lower:
             return 'cna'
-        elif 'medtech' in position_lower or 'med tech' in position_lower or 'medication' in position_lower:
-            # Match "MedTech", "Med Tech", "MedTech/Caregiver", "Medication Technician", etc.
-            return 'med_tech'
         elif 'caregiver' in position_lower:
             # Only match standalone "caregiver", not "MedTech/Caregiver" (handled above)
             return 'caregiver'
