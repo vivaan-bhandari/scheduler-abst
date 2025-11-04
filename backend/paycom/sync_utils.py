@@ -133,10 +133,14 @@ def sync_paycom_to_staff():
                     # Get correct facility for this employee
                     correct_facility = get_or_create_facility_for_employee(paycom_emp)
                     
+                    # Map Paycom role to Staff role (in case position changed)
+                    staff_role = map_paycom_role_to_staff_role(paycom_emp)
+                    
                     # Update Staff record with latest Paycom data
                     staff.first_name = paycom_emp.first_name
                     staff.last_name = paycom_emp.last_name
                     staff.email = paycom_emp.work_email or staff.email
+                    staff.role = staff_role  # Update role in case position changed (e.g., MedTech/Caregiver -> med_tech)
                     staff.status = 'active'  # Ensure active status (we're only syncing active Paycom employees)
                     staff.max_hours = paycom_emp.max_hours_per_week
                     
