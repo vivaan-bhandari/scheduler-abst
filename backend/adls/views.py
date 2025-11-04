@@ -377,7 +377,7 @@ class ADLViewSet(viewsets.ModelViewSet):
                     else:
                         print(f"Updated WeeklyADLEntry for {resident_name} - {question_text[:30]}... (Week: {week_start} to {week_end})")
                     
-                    print(f"Row {index}: Processed '{question_text}' for resident '{resident_name}' - {task_time}min x {total_frequency} = {total_minutes} total minutes")
+                    print(f"Row {index}: Processed '{question_text}' for resident '{resident_name}' - {task_time}min x {total_frequency_from_shifts} = {total_minutes} total minutes")
                     
                 except Exception as e:
                     print(f"Error processing row {index}: {e}")
