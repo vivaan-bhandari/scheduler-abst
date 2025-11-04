@@ -17,6 +17,10 @@ def sync_paycom_to_staff():
     Sync Paycom employees with the existing Staff model
     Creates new Staff records for Paycom employees that don't have them
     """
+    logger.info("=" * 80)
+    logger.info("STARTING Staff sync from Paycom employees")
+    logger.info("=" * 80)
+    
     synced_count = 0
     created_count = 0
     updated_count = 0
