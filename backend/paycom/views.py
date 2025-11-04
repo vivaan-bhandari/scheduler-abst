@@ -179,7 +179,29 @@ class PaycomSyncViewSet(viewsets.ReadOnlyModelViewSet):
         """Manually sync Paycom employees to Staff model (for scheduling)"""
         try:
             logger.info("Starting Staff sync via API endpoint")
+            
+            # Log diagnostic info before sync
+            from scheduling.models import Staff
+            total_staff = Staff.objects.count()
+            active_staff = Staff.objects.filter(status='active').count()
+            medtech_staff = Staff.objects.filter(role='med_tech').count()
+            caregiver_staff = Staff.objects.filter(role='caregiver').count()
+            
+            from .models import PaycomEmployee
+            total_paycom = PaycomEmployee.objects.count()
+            active_paycom = PaycomEmployee.objects.filter(status='active').count()
+            linked_paycom = PaycomEmployee.objects.filter(staff__isnull=False).count()
+            unlinked_paycom = PaycomEmployee.objects.filter(staff__isnull=True, status='active').count()
+            
+            logger.info(f"Pre-sync stats: Staff total={total_staff}, active={active_staff}, medtech={medtech_staff}, caregiver={caregiver_staff}")
+            logger.info(f"Pre-sync stats: Paycom total={total_paycom}, active={active_paycom}, linked={linked_paycom}, unlinked={unlinked_paycom}")
+            
             sync_result = sync_paycom_to_staff()
+            
+            # Log post-sync stats
+            post_medtech = Staff.objects.filter(role='med_tech').count()
+            post_caregiver = Staff.objects.filter(role='caregiver').count()
+            logger.info(f"Post-sync stats: medtech={post_medtech}, caregiver={post_caregiver}")
             
             if sync_result['success']:
                 return Response({
@@ -188,6 +210,14 @@ class PaycomSyncViewSet(viewsets.ReadOnlyModelViewSet):
                     'created_count': sync_result['created_count'],
                     'updated_count': sync_result['updated_count'],
                     'error_count': sync_result['error_count'],
+                    'pre_sync': {
+                        'medtech_count': medtech_staff,
+                        'caregiver_count': caregiver_staff
+                    },
+                    'post_sync': {
+                        'medtech_count': post_medtech,
+                        'caregiver_count': post_caregiver
+                    },
                     'timestamp': str(datetime.now())
                 })
             else:
