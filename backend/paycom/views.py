@@ -11,6 +11,7 @@ from django.http import JsonResponse
 from django.conf import settings
 import logging
 import traceback
+import threading
 from datetime import datetime
 
 from .models import PaycomEmployee
@@ -101,31 +102,44 @@ class PaycomSyncViewSet(viewsets.ReadOnlyModelViewSet):
     
     @action(detail=False, methods=['post'])
     def start_sync(self, request):
-        """Trigger Paycom sync manually - syncs both employee data and time tracking"""
-        try:
-            logger.info("Starting Paycom sync via ViewSet action")
-            
-            # Step 1: Sync employee data (Employee Directory, Dates, Payees)
-            logger.info("Step 1: Syncing employee roster data...")
+        """Trigger Paycom sync manually - syncs both employee data and time tracking (async)"""
+        def run_sync():
+            """Run sync in background thread"""
             try:
-                # Try to sync employee roster, but don't fail if it errors (files might not exist)
-                call_command('sync_paycom', report_type='all', force=True, verbosity=0)
-                logger.info("Employee roster sync completed")
+                logger.info("Starting Paycom sync in background thread")
+                
+                # Step 1: Sync employee data (Employee Directory, Dates, Payees)
+                logger.info("Step 1: Syncing employee roster data...")
+                try:
+                    # Try to sync employee roster, but don't fail if it errors (files might not exist)
+                    call_command('sync_paycom', report_type='all', force=True, verbosity=0)
+                    logger.info("Employee roster sync completed")
+                except Exception as e:
+                    # Log but don't fail - employee roster sync is optional if files don't exist
+                    logger.warning(f"Employee roster sync skipped (may be expected if no files): {str(e)}")
+                    # Continue with time tracking sync even if employee sync fails
+                
+                # Step 2: Sync time tracking data (clock in/out times)
+                logger.info("Step 2: Syncing time tracking data...")
+                call_command('sync_paycom_time_tracking', days_back=7)
+                logger.info("Time tracking sync completed")
+                
+                logger.info("Paycom sync completed successfully in background")
             except Exception as e:
-                # Log but don't fail - employee roster sync is optional if files don't exist
-                logger.warning(f"Employee roster sync skipped (may be expected if no files): {str(e)}")
-                # Continue with time tracking sync even if employee sync fails
+                logger.error(f"Background sync failed: {str(e)}")
+                logger.error(f"Traceback: {traceback.format_exc()}")
+        
+        try:
+            logger.info("Starting Paycom sync via ViewSet action (async)")
             
-            # Step 2: Sync time tracking data (clock in/out times)
-            logger.info("Step 2: Syncing time tracking data...")
-            call_command('sync_paycom_time_tracking', days_back=7)
-            logger.info("Time tracking sync completed")
+            # Start sync in background thread to avoid timeout
+            sync_thread = threading.Thread(target=run_sync, daemon=True)
+            sync_thread.start()
             
-            logger.info("Paycom sync completed successfully via ViewSet action")
-            
+            # Return immediately - sync runs in background
             return Response({
                 'status': 'success',
-                'message': 'Paycom sync completed successfully (employee data + time tracking)',
+                'message': 'Paycom sync started in background. Check sync logs for progress.',
                 'timestamp': str(datetime.now())
             })
             

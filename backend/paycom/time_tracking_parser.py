@@ -126,6 +126,12 @@ class PaycomTimeTrackingParser:
         
         # Parse dates and times
         try:
+            # Handle invalid dates like 0000-00-00
+            if not date_str or date_str == '0000-00-00' or '0000-00-00' in date_str:
+                logger.debug(f"Skipping row with invalid date '{date_str}' for employee {employee_id}")
+                self.sync_stats['skipped'] += 1
+                return
+                
             work_date = datetime.strptime(date_str, '%Y-%m-%d').date()
             clock_in = self._parse_datetime(clock_in_str, work_date)
             clock_out = self._parse_datetime(clock_out_str, work_date) if clock_out_str else None
