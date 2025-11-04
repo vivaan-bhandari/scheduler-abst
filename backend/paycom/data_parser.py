@@ -447,11 +447,19 @@ class PaycomDataParser:
                     
                 except PaycomEmployee.DoesNotExist:
                     # Create new employee
-                    employee = PaycomEmployee.objects.create(
-                        employee_id=employee_id,
-                        last_synced_at=timezone.now(),
-                        **{k: v for k, v in employee_data.items() if hasattr(PaycomEmployee, k)}
-                    )
+                    # Ensure required fields are present
+                    create_data = {
+                        'employee_id': employee_id,
+                        'first_name': employee_data.get('first_name', '') or 'Unknown',
+                        'last_name': employee_data.get('last_name', '') or 'Unknown',
+                        'last_synced_at': timezone.now(),
+                    }
+                    # Add optional fields
+                    for k, v in employee_data.items():
+                        if k != 'employee_id' and hasattr(PaycomEmployee, k) and v is not None:
+                            create_data[k] = v
+                    
+                    employee = PaycomEmployee.objects.create(**create_data)
                     stats['created'] += 1
                 
                 # Update sync log
