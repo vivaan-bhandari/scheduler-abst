@@ -79,17 +79,17 @@ def sync_paycom_to_staff():
                     
                     try:
                         staff = Staff.objects.create(
-                        first_name=paycom_emp.first_name,
-                        last_name=paycom_emp.last_name,
-                        email=email,
-                        employee_id=paycom_emp.employee_id,
-                        role=staff_role,
-                        hire_date=paycom_emp.hire_date or timezone.now().date(),
-                        status='active',  # Always create as active (we're only syncing active Paycom employees)
-                        max_hours=paycom_emp.max_hours_per_week,
-                        facility=facility,
-                        notes=f"Synced from Paycom on {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                    )
+                            first_name=paycom_emp.first_name,
+                            last_name=paycom_emp.last_name,
+                            email=email,
+                            employee_id=paycom_emp.employee_id,
+                            role=staff_role,
+                            hire_date=paycom_emp.hire_date or timezone.now().date(),
+                            status='active',  # Always create as active (we're only syncing active Paycom employees)
+                            max_hours=paycom_emp.max_hours_per_week,
+                            facility=facility,
+                            notes=f"Synced from Paycom on {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                        )
                     except Exception as create_error:
                         # Handle unique constraint violations
                         if 'employee_id' in str(create_error) or 'unique' in str(create_error).lower():
