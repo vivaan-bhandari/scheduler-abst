@@ -22,7 +22,8 @@ def sync_paycom_to_staff():
     logger.info("=" * 80)
     
     # Log all MedTech positions to diagnose role mapping
-    all_medtech_positions = PaycomEmployee.objects.filter(
+    logger.info("🔍 DIAGNOSTIC: Checking for MedTech positions in PaycomEmployee records...")
+    all_positions = PaycomEmployee.objects.filter(
         status='active'
     ).exclude(
         position_description__isnull=True
@@ -30,14 +31,23 @@ def sync_paycom_to_staff():
         position_description=''
     ).values_list('position_description', flat=True).distinct()
     
+    logger.info(f"Total distinct active positions found: {len(all_positions)}")
+    
     medtech_like_positions = [
-        pos for pos in all_medtech_positions 
+        pos for pos in all_positions 
         if pos and ('medtech' in pos.lower() or 'med tech' in pos.lower() or 'medication' in pos.lower())
     ]
     
-    logger.info(f"Found {len(medtech_like_positions)} MedTech-like positions in PaycomEmployee records:")
-    for pos in sorted(medtech_like_positions):
-        logger.info(f"  - '{pos}'")
+    logger.info("=" * 80)
+    logger.info(f"🔍 FOUND {len(medtech_like_positions)} MedTech-like positions in PaycomEmployee records:")
+    if medtech_like_positions:
+        for pos in sorted(medtech_like_positions):
+            logger.info(f"  ✅ '{pos}'")
+    else:
+        logger.warning("  ❌ NO MedTech positions found! All positions:")
+        for pos in sorted(all_positions)[:20]:  # Show first 20 positions
+            logger.warning(f"     - '{pos}'")
+    logger.info("=" * 80)
     
     synced_count = 0
     created_count = 0
