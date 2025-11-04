@@ -71,6 +71,48 @@ const Dashboard = ({ user, onLogout }) => {
     return monday.toISOString().split('T')[0];
   };
 
+  // Helper function to get current week's Monday in LA timezone
+  const getCurrentWeekMonday = () => {
+    // Get current time
+    const now = new Date();
+    
+    // Get LA time components using Intl.DateTimeFormat
+    const laFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Los_Angeles',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      weekday: 'long'
+    });
+    
+    // Format to get LA date string
+    const laDateParts = laFormatter.formatToParts(now);
+    const laYear = parseInt(laDateParts.find(part => part.type === 'year').value);
+    const laMonth = parseInt(laDateParts.find(part => part.type === 'month').value);
+    const laDay = parseInt(laDateParts.find(part => part.type === 'day').value);
+    const weekdayName = laDateParts.find(part => part.type === 'weekday').value.toLowerCase();
+    
+    // Map weekday name to number (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    const weekdayMap = {
+      'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+      'thursday': 4, 'friday': 5, 'saturday': 6
+    };
+    const dayOfWeek = weekdayMap[weekdayName] || 1;
+    
+    // Calculate days to Monday (if Sunday, go back 6 days; otherwise go back dayOfWeek - 1 days)
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    
+    // Create Monday date (using UTC date constructor to avoid timezone issues)
+    const mondayUTC = new Date(Date.UTC(laYear, laMonth - 1, laDay - daysToMonday));
+    
+    // Format as YYYY-MM-DD
+    const year = mondayUTC.getUTCFullYear();
+    const month = String(mondayUTC.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(mondayUTC.getUTCDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  };
+
   useEffect(() => {
     fetchUserAccess();
     // Check if user has facility access
@@ -280,7 +322,8 @@ const Dashboard = ({ user, onLogout }) => {
                 variant="contained"
                 size="small"
                 onClick={() => {
-                  setSelectedWeek('2025-07-21');
+                  const currentWeekMonday = getCurrentWeekMonday();
+                  setSelectedWeek(currentWeekMonday);
                 }}
                 sx={{ ml: 1 }}
               >
