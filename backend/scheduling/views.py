@@ -1279,12 +1279,20 @@ class AIRecommendationViewSet(viewsets.ModelViewSet):
             roles_needed.extend(['caregiver'] * role_requirements['caregiver'])
         
         # Filter staff by role and availability
+        # IMPORTANT: med_tech staff can work caregiver shifts (dual-role capability)
         for role in roles_needed:
             # Find staff with matching role who can work more hours
-            suitable_staff = [
-                s for s in available_staff 
-                if s['staff'].role == role and s['can_work_more']
-            ]
+            # For caregiver shifts, also include med_tech staff (MedTech/Caregiver dual-role)
+            if role == 'caregiver':
+                suitable_staff = [
+                    s for s in available_staff 
+                    if (s['staff'].role == role or s['staff'].role == 'med_tech') and s['can_work_more']
+                ]
+            else:
+                suitable_staff = [
+                    s for s in available_staff 
+                    if s['staff'].role == role and s['can_work_more']
+                ]
             
             if suitable_staff:
                 # Sort by hours remaining (descending) to prioritize staff with more available hours

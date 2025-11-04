@@ -490,7 +490,11 @@ const WeeklyPlanner = forwardRef(({ facilityId, refreshTrigger }, ref) => {
     }
 
     // Check if staff role matches shift role requirement
-    if (draggedStaff.role !== shift.required_staff_role) {
+    // Allow med_tech staff to work caregiver shifts (MedTech/Caregiver dual-role)
+    const canAssign = draggedStaff.role === shift.required_staff_role || 
+                     (shift.required_staff_role === 'caregiver' && draggedStaff.role === 'med_tech');
+    
+    if (!canAssign) {
       setSnackbar({ 
         open: true, 
         message: `Cannot assign ${draggedStaff.role.replace('_', ' ')} to ${shift.required_staff_role.replace('_', ' ')} shift`,
@@ -2633,7 +2637,11 @@ const WeeklyPlanner = forwardRef(({ facilityId, refreshTrigger }, ref) => {
                               <em>Leave open</em>
                             </MenuItem>
                             {staff
-                              .filter(member => member.role === selectedShiftForReassign.required_staff_role)
+                              .filter(member => {
+                                // Allow med_tech staff to work caregiver shifts (dual-role)
+                                return member.role === selectedShiftForReassign.required_staff_role ||
+                                       (selectedShiftForReassign.required_staff_role === 'caregiver' && member.role === 'med_tech');
+                              })
                               .map((member) => {
                                 const memberAssignments = assignments.filter(a => {
                                   const assignmentStaffId = typeof a.staff === 'object' ? a.staff?.id : a.staff;
@@ -2707,7 +2715,11 @@ const WeeklyPlanner = forwardRef(({ facilityId, refreshTrigger }, ref) => {
                       <em>Leave open</em>
                     </MenuItem>
                     {staff
-                      .filter(member => member.role === selectedShiftForReassign.required_staff_role)
+                      .filter(member => {
+                        // Allow med_tech staff to work caregiver shifts (dual-role)
+                        return member.role === selectedShiftForReassign.required_staff_role ||
+                               (selectedShiftForReassign.required_staff_role === 'caregiver' && member.role === 'med_tech');
+                      })
                       .map((member) => {
                         const memberAssignments = assignments.filter(a => {
                           const assignmentStaffId = typeof a.staff === 'object' ? a.staff?.id : a.staff;
