@@ -60,25 +60,47 @@ def sync_paycom_to_staff():
                         logger.info(f"Updated existing Staff record for Paycom employee {paycom_emp.employee_id}")
                         continue
                     
-                    # Create Staff record - handle duplicate emails
+                    # Create Staff record - handle duplicate emails and employee_ids
                     email = paycom_emp.work_email or f"{paycom_emp.employee_id}@company.com"
                     
                     # If email already exists, make it unique
                     if Staff.objects.filter(email=email).exists():
                         email = f"{paycom_emp.employee_id}@company.com"
                     
-                    staff = Staff.objects.create(
-                        first_name=paycom_emp.first_name,
-                        last_name=paycom_emp.last_name,
-                        email=email,
-                        employee_id=paycom_emp.employee_id,
-                        role=staff_role,
-                        hire_date=paycom_emp.hire_date or timezone.now().date(),
-                        status=paycom_emp.status,
-                        max_hours=paycom_emp.max_hours_per_week,
-                        facility=facility,
-                        notes=f"Synced from Paycom on {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                    )
+                    # Double-check employee_id doesn't exist (race condition protection)
+                    if Staff.objects.filter(employee_id=paycom_emp.employee_id).exists():
+                        logger.warning(f"Staff with employee_id {paycom_emp.employee_id} already exists, skipping creation")
+                        error_count += 1
+                        continue
+                    
+                    try:
+                        staff = Staff.objects.create(
+                            first_name=paycom_emp.first_name,
+                            last_name=paycom_emp.last_name,
+                            email=email,
+                            employee_id=paycom_emp.employee_id,
+                            role=staff_role,
+                            hire_date=paycom_emp.hire_date or timezone.now().date(),
+                            status=paycom_emp.status,
+                            max_hours=paycom_emp.max_hours_per_week,
+                            facility=facility,
+                            notes=f"Synced from Paycom on {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                        )
+                    except Exception as create_error:
+                        # Handle unique constraint violations
+                        if 'employee_id' in str(create_error) or 'unique' in str(create_error).lower():
+                            logger.warning(f"Staff with employee_id {paycom_emp.employee_id} already exists (constraint error), linking existing staff")
+                            existing_staff = Staff.objects.filter(employee_id=paycom_emp.employee_id).first()
+                            if existing_staff:
+                                paycom_emp.staff = existing_staff
+                                paycom_emp.save()
+                                updated_count += 1
+                                synced_count += 1
+                            else:
+                                error_count += 1
+                            continue
+                        else:
+                            raise  # Re-raise if it's a different error
                     
                     # Link Paycom employee to Staff
                     paycom_emp.staff = staff
