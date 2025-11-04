@@ -147,7 +147,6 @@ class PaycomSyncViewSet(viewsets.ReadOnlyModelViewSet):
                 # Step 3: Sync Paycom employees to Staff model (for scheduling)
                 logger.info("Step 3: Syncing Paycom employees to Staff model...")
                 try:
-                    from .sync_utils import sync_paycom_to_staff
                     sync_result = sync_paycom_to_staff()
                     if sync_result['success']:
                         logger.info(f"Staff sync completed: {sync_result['created_count']} created, {sync_result['updated_count']} updated")
