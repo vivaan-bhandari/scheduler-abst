@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Fragment } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -40,6 +40,8 @@ import {
   Assessment as AssessmentIcon,
   ViewList as ViewListIcon,
   DateRange as DateRangeIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config';
@@ -77,6 +79,93 @@ const ResidentDetails = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
+  const [expandedRows, setExpandedRows] = useState(new Set());
+
+  const toggleRowExpansion = (questionId) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(questionId)) {
+        newSet.delete(questionId);
+      } else {
+        newSet.add(questionId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleInlinePerDayShiftChange = async (weeklyEntryId, dayIdx, shiftKey, value) => {
+    if (!weeklyEntryId) return;
+    
+    const prefix = dayPrefixes[dayIdx];
+    const field = `${prefix}${shiftKey}Time`;
+    const numValue = Number(value) || 0;
+    
+    // Find the entry
+    const entry = weeklyEntries.find(e => e.id === weeklyEntryId);
+    if (!entry) return;
+    
+    // Convert per_day_data to per_day_shift_times format
+    let perDayShiftTimes = {};
+    if (entry.per_day_data) {
+      // Handle both old and new formats
+      if (typeof entry.per_day_data === 'object' && !Array.isArray(entry.per_day_data)) {
+        Object.entries(entry.per_day_data).forEach(([day, shifts]) => {
+          if (typeof shifts === 'object') {
+            Object.entries(shifts).forEach(([shiftKey, freq]) => {
+              const dayPrefix = dayPrefixes[days.indexOf(day)];
+              if (dayPrefix) {
+                perDayShiftTimes[`${dayPrefix}${shiftKey}Time`] = Number(freq) || 0;
+              }
+            });
+          } else {
+            // Old format
+            perDayShiftTimes[day] = Number(shifts) || 0;
+          }
+        });
+      }
+    }
+    
+    // Update the specific field
+    perDayShiftTimes[field] = numValue;
+    
+    // Calculate new frequency
+    const newFrequency = Object.values(perDayShiftTimes).reduce((sum, v) => sum + (Number(v) || 0), 0);
+    const newTotal = (entry.minutes_per_occurrence || 0) * newFrequency;
+    
+    // Convert back to per_day_data format
+    const newPerDayData = {};
+    days.forEach((day, idx) => {
+      const dayPrefix = dayPrefixes[idx];
+      newPerDayData[day] = {
+        Day: Number(perDayShiftTimes[`${dayPrefix}Shift1Time`] || 0),
+        Swing: Number(perDayShiftTimes[`${dayPrefix}Shift2Time`] || 0),
+        NOC: Number(perDayShiftTimes[`${dayPrefix}Shift3Time`] || 0),
+      };
+    });
+    
+    // Update state
+    const updatedEntry = {
+      ...entry,
+      frequency_per_week: newFrequency,
+      total_minutes_week: newTotal,
+      total_hours_week: newTotal / 60,
+      per_day_data: newPerDayData
+    };
+    
+    setWeeklyEntries(prev => prev.map(e => e.id === weeklyEntryId ? updatedEntry : e));
+    
+    // Auto-save to backend
+    try {
+      await axios.patch(`${API_BASE_URL}/api/weekly-adls/${weeklyEntryId}/`, {
+        frequency_per_week: newFrequency,
+        total_minutes_week: newTotal,
+        total_hours_week: newTotal / 60,
+        per_day_data: newPerDayData
+      });
+    } catch (err) {
+      console.error('Failed to auto-save per-day data:', err);
+    }
+  };
 
   useEffect(() => {
     fetchAll();
@@ -566,6 +655,7 @@ const ResidentDetails = () => {
             <Table>
               <TableHead>
                 <TableRow>
+                  <TableCell width={30}></TableCell>
                   <TableCell>#</TableCell>
                   <TableCell>Question</TableCell>
                   <TableCell>Minutes/Occurrence</TableCell>
@@ -582,10 +672,37 @@ const ResidentDetails = () => {
                     entry.adl_question === q.id && entry.week_start_date === selectedWeek
                   );
                   
+                  const isExpanded = expandedRows.has(q.id);
+                  
+                  // Convert per_day_data to per_day_shift_times for display
+                  let perDayShiftTimes = {};
+                  if (weeklyEntry?.per_day_data) {
+                    days.forEach((day, dayIdx) => {
+                      const dayPrefix = dayPrefixes[dayIdx];
+                      const dayData = weeklyEntry.per_day_data[day];
+                      if (dayData && typeof dayData === 'object') {
+                        perDayShiftTimes[`${dayPrefix}Shift1Time`] = dayData.Day || 0;
+                        perDayShiftTimes[`${dayPrefix}Shift2Time`] = dayData.Swing || 0;
+                        perDayShiftTimes[`${dayPrefix}Shift3Time`] = dayData.NOC || 0;
+                      }
+                    });
+                  }
+                  
                   return (
-                    <TableRow key={q.id}>
-                      <TableCell>{idx + 1}</TableCell>
-                      <TableCell>{q.text}</TableCell>
+                    <Fragment key={q.id}>
+                      <TableRow>
+                        <TableCell>
+                          {weeklyEntry && (
+                            <IconButton
+                              size="small"
+                              onClick={() => toggleRowExpansion(q.id)}
+                            >
+                              {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                            </IconButton>
+                          )}
+                        </TableCell>
+                        <TableCell>{idx + 1}</TableCell>
+                        <TableCell>{q.text}</TableCell>
                       <TableCell>
                         {weeklyEntry ? (
                           <TextField
@@ -763,6 +880,53 @@ const ResidentDetails = () => {
                         )}
                       </TableCell>
                     </TableRow>
+                    {isExpanded && weeklyEntry && (
+                      <TableRow>
+                        <TableCell colSpan={8} sx={{ py: 2, bgcolor: 'grey.50' }}>
+                          <Box>
+                            <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                              Day-wise Frequency Entry (times per shift)
+                            </Typography>
+                            <TableContainer>
+                              <Table size="small">
+                                <TableHead>
+                                  <TableRow>
+                                    <TableCell>Day</TableCell>
+                                    {shifts.map((shift) => (
+                                      <TableCell key={shift.key} align="center">{shift.label}</TableCell>
+                                    ))}
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {days.map((day, dayIdx) => (
+                                    <TableRow key={day}>
+                                      <TableCell>{day}</TableCell>
+                                      {shifts.map((shift) => {
+                                        const prefix = dayPrefixes[dayIdx];
+                                        const field = `${prefix}${shift.key}Time`;
+                                        return (
+                                          <TableCell key={shift.key} align="center">
+                                            <TextField
+                                              type="number"
+                                              size="small"
+                                              value={perDayShiftTimes[field] || ''}
+                                              onChange={(e) => handleInlinePerDayShiftChange(weeklyEntry.id, dayIdx, shift.key, e.target.value)}
+                                              inputProps={{ min: 0 }}
+                                              sx={{ width: 70 }}
+                                            />
+                                          </TableCell>
+                                        );
+                                      })}
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
                   );
                 })}
               </TableBody>
