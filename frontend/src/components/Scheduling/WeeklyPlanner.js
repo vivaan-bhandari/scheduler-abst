@@ -2461,6 +2461,15 @@ const WeeklyPlanner = forwardRef(({ facilityId, refreshTrigger }, ref) => {
                           const shiftDateStr = s.date ? (s.date.split('T')[0] || s.date) : null;
                           return shiftDateStr === dayStr && 
                                  (s.shift_template?.shift_type || 'DAY').toUpperCase() === shiftType;
+                        }).sort((a, b) => {
+                          // Sort shifts by role: med_tech first, then caregiver
+                          // This ensures consistent ordering across all days
+                          const roleOrder = { 'med_tech': 0, 'medtech': 0, 'caregiver': 1, 'cna': 1 };
+                          const roleA = (a.required_staff_role || '').toLowerCase();
+                          const roleB = (b.required_staff_role || '').toLowerCase();
+                          const orderA = roleOrder[roleA] !== undefined ? roleOrder[roleA] : 2;
+                          const orderB = roleOrder[roleB] !== undefined ? roleOrder[roleB] : 2;
+                          return orderA - orderB;
                         });
                         
                         const dayOfWeek = day.getDay(); // 0 = Sunday, 6 = Saturday
