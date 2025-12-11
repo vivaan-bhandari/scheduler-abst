@@ -56,6 +56,7 @@ const WeeklyADLEntryForm = () => {
   const [success, setSuccess] = useState('');
 
   const weekFromUrl = searchParams.get('week');
+  const facilityFromUrl = searchParams.get('facility');
   const targetWeek = weekFromUrl || selectedWeek;
 
   useEffect(() => {
@@ -65,6 +66,24 @@ const WeeklyADLEntryForm = () => {
     fetchFacilities();
     fetchADLQuestions();
   }, [weekFromUrl, setSelectedWeek]);
+
+  // Auto-select facility from URL parameter
+  useEffect(() => {
+    if (facilityFromUrl && facilities.length > 0 && !selectedFacility) {
+      const facility = facilities.find(f => 
+        f.id === parseInt(facilityFromUrl) || 
+        f.id.toString() === facilityFromUrl ||
+        f.facility_id?.toString() === facilityFromUrl
+      );
+      if (facility) {
+        setSelectedFacility(facility.id || facility.facility_id);
+        // Auto-advance to next step if we're still on step 0
+        if (activeStep === 0) {
+          setActiveStep(1);
+        }
+      }
+    }
+  }, [facilityFromUrl, facilities, selectedFacility, activeStep]);
 
   useEffect(() => {
     if (selectedFacility) {
@@ -92,7 +111,8 @@ const WeeklyADLEntryForm = () => {
       const response = await axios.get(`${API_BASE_URL}/api/adl-questions/`);
       setAdlQuestions(response.data.results || response.data);
     } catch (err) {
-      setError('Failed to fetch ADL questions');
+      console.error('Error fetching ADL questions:', err);
+      setError('Failed to fetch ADL questions: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -131,12 +151,17 @@ const WeeklyADLEntryForm = () => {
   };
 
   const handleADLEntryChange = (residentId, questionId, field, value) => {
+    // Find the question text for this question
+    const question = adlQuestions.find(q => q.id === questionId);
+    const questionText = question?.text || question?.question_text || '';
+    
     setAdlEntries(prev => ({
       ...prev,
       [`${residentId}_${questionId}`]: {
         ...prev[`${residentId}_${questionId}`],
         resident: residentId,
         adl_question: questionId,
+        question_text: questionText,
         week_start_date: targetWeek,
         week_end_date: getWeekEndDate(targetWeek),
         [field]: value
@@ -162,11 +187,38 @@ const WeeklyADLEntryForm = () => {
 
       if (entries.length === 0) {
         setError('Please fill in at least one ADL entry');
+        setLoading(false);
         return;
       }
 
-      const response = await axios.post(`${API_BASE_URL}/api/weekly-adl-entries/`, entries);
+      console.log('🔵 Attempting to save ADL entries:', entries.length);
+      console.log('🔵 Sample entry:', entries[0]);
       
+      // Validate entries before sending
+      const validatedEntries = entries.map(entry => {
+        // Ensure all required fields are present and valid
+        if (!entry.resident || !entry.adl_question) {
+          throw new Error(`Missing required fields: resident=${entry.resident}, adl_question=${entry.adl_question}`);
+        }
+        return {
+          resident: entry.resident,
+          adl_question: entry.adl_question,
+          question_text: entry.question_text || '',
+          week_start_date: entry.week_start_date,
+          week_end_date: entry.week_end_date,
+          minutes_per_occurrence: parseInt(entry.minutes_per_occurrence) || 0,
+          frequency_per_week: parseInt(entry.frequency_per_week) || 0,
+          total_minutes_week: (parseInt(entry.minutes_per_occurrence) || 0) * (parseInt(entry.frequency_per_week) || 0),
+          status: entry.status || 'complete',
+          per_day_data: entry.per_day_data || {}
+        };
+      });
+
+      console.log('🔵 Validated entries:', validatedEntries);
+      
+      const response = await axios.post(`${API_BASE_URL}/api/weekly-adls/`, validatedEntries);
+      
+      console.log('✅ Save response:', response.data);
       setSuccess(`Successfully created ${entries.length} ADL entries for ${getWeekLabel(targetWeek)}`);
       
       // Navigate back to dashboard after a short delay
@@ -175,7 +227,45 @@ const WeeklyADLEntryForm = () => {
       }, 2000);
 
     } catch (err) {
-      setError('Failed to save ADL entries: ' + (err.response?.data?.detail || err.message));
+      console.error('❌ Error saving ADL entries:', err);
+      console.error('❌ Error response:', err.response?.data);
+      console.error('❌ Error status:', err.response?.status);
+      
+      let errorMessage = 'Failed to save ADL entries';
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          errorMessage = err.response.data;
+        } else if (err.response.data.detail) {
+          errorMessage = err.response.data.detail;
+        } else if (err.response.data.error) {
+          errorMessage = err.response.data.error;
+        } else if (err.response.data.errors) {
+          // Handle bulk create errors
+          const errorDetails = err.response.data.errors;
+          if (Array.isArray(errorDetails)) {
+            errorMessage = `Errors: ${errorDetails.map(e => JSON.stringify(e)).join(', ')}`;
+          } else {
+            errorMessage = `Errors: ${JSON.stringify(errorDetails)}`;
+          }
+        } else if (err.response.data.non_field_errors) {
+          errorMessage = err.response.data.non_field_errors.join(', ');
+        } else {
+          // Show first field error if available
+          const fieldErrors = Object.entries(err.response.data).map(([field, errors]) => {
+            if (Array.isArray(errors)) {
+              return `${field}: ${errors.join(', ')}`;
+            }
+            return `${field}: ${errors}`;
+          });
+          if (fieldErrors.length > 0) {
+            errorMessage = fieldErrors.join('; ');
+          }
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -226,11 +316,17 @@ const WeeklyADLEntryForm = () => {
         );
 
       case 1:
+        const selectedFacilityName = facilities.find(f => f.id === selectedFacility)?.name || '';
         return (
           <Box>
             <Typography variant="h6" gutterBottom>
               Select Residents for ADL Assessment
             </Typography>
+            {selectedFacilityName && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Facility: <strong>{selectedFacilityName}</strong> • Week: <strong>{getWeekLabel(targetWeek)}</strong>
+              </Alert>
+            )}
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Select the residents you want to create ADL entries for in {getWeekLabel(targetWeek)}
             </Typography>
@@ -251,7 +347,7 @@ const WeeklyADLEntryForm = () => {
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                           <PersonIcon sx={{ mr: 1 }} />
                           <Typography variant="subtitle1">
-                            {resident.first_name} {resident.last_name}
+                            {resident.name || `${resident.first_name || ''} ${resident.last_name || ''}`.trim() || 'Unnamed Resident'}
                           </Typography>
                         </Box>
                         <Typography variant="body2" color="text.secondary">
@@ -295,7 +391,7 @@ const WeeklyADLEntryForm = () => {
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
                       <PersonIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                      {resident?.first_name} {resident?.last_name}
+                      {resident?.name || `${resident?.first_name || ''} ${resident?.last_name || ''}`.trim() || 'Unnamed Resident'}
                     </Typography>
                     
                     <Grid container spacing={2}>

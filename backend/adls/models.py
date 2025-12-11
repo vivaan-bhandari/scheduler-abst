@@ -58,8 +58,8 @@ class WeeklyADLEntry(models.Model):
     question_text = models.TextField()  # Store text for historical reference
     
     # Week period
-    week_start_date = models.DateField()  # Monday of the week
-    week_end_date = models.DateField()    # Sunday of the week
+    week_start_date = models.DateField()  # Sunday of the week (to match frontend display "Week of Nov 30 - Dec 6")
+    week_end_date = models.DateField()    # Saturday of the week
     
     # ADL data for the week
     minutes_per_occurrence = models.PositiveIntegerField(default=0)

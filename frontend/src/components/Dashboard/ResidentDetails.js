@@ -31,6 +31,7 @@ import {
   Chip,
   IconButton,
   Tooltip,
+  Collapse,
 } from '@mui/material';
 import {
   CalendarToday as CalendarIcon,
@@ -42,6 +43,7 @@ import {
   DateRange as DateRangeIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config';
@@ -52,21 +54,33 @@ const days = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
 ];
 const dayPrefixes = ['Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun'];
-const shifts = [
-  { label: 'Day', key: 'Shift1' },
-  { label: 'Swing', key: 'Shift2' },
-  { label: 'NOC', key: 'Shift3' },
-];
 
 const ResidentDetails = () => {
   const { residentId } = useParams();
   const navigate = useNavigate();
-  const { selectedWeek, getWeekLabel } = useWeek();
+  const { selectedWeek, getWeekLabel, setSelectedWeek } = useWeek();
   const [resident, setResident] = useState(null);
+  const [facility, setFacility] = useState(null); // Store facility data for shift_format
   const [adls, setAdls] = useState([]); // All ADL responses for this resident
   const [questions, setQuestions] = useState([]); // Master list
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Get shifts based on facility format
+  const getShifts = () => {
+    if (facility?.shift_format === '2_shift') {
+      return [
+        { label: 'Day', key: 'Shift1' },
+        { label: 'NOC', key: 'Shift3' },
+      ];
+    }
+    return [
+      { label: 'Day', key: 'Shift1' },
+      { label: 'Swing', key: 'Shift2' },
+      { label: 'NOC', key: 'Shift3' },
+    ];
+  };
+  const shifts = getShifts();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalQuestion, setModalQuestion] = useState(null);
   const [weeklyEntries, setWeeklyEntries] = useState([]);
@@ -80,6 +94,7 @@ const ResidentDetails = () => {
   const [statusSaving, setStatusSaving] = useState(false);
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [expandedRows, setExpandedRows] = useState(new Set());
+  const [expandedCategories, setExpandedCategories] = useState(new Set(['Personal Care', 'Mobility', 'Behavioral / Cognitive', 'Medical / Medication', 'Documentation & Communication']));
 
   const toggleRowExpansion = (questionId) => {
     setExpandedRows(prev => {
@@ -91,6 +106,57 @@ const ResidentDetails = () => {
       }
       return newSet;
     });
+  };
+
+  const toggleCategoryExpansion = (category) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
+
+  // Categorize ADL questions based on keywords
+  const categorizeQuestion = (questionText) => {
+    const text = questionText.toLowerCase();
+    
+    // Personal Care
+    if (text.includes('bathing') || text.includes('grooming') || text.includes('dressing') || 
+        text.includes('bowel') || text.includes('bladder') || text.includes('toileting') ||
+        text.includes('housekeeping') || text.includes('laundry')) {
+      return 'Personal Care';
+    }
+    
+    // Mobility
+    if (text.includes('ambulation') || text.includes('repositioning') || text.includes('transfer') ||
+        text.includes('mobility') || text.includes('walking') || text.includes('escorting')) {
+      return 'Mobility';
+    }
+    
+    // Behavioral / Cognitive
+    if (text.includes('behavioral') || text.includes('cognitive') || text.includes('cueing') ||
+        text.includes('redirecting') || text.includes('dementia') || text.includes('leisure') ||
+        text.includes('non-drug interventions')) {
+      return 'Behavioral / Cognitive';
+    }
+    
+    // Medical / Medication
+    if (text.includes('medication') || text.includes('treatment') || text.includes('wound') ||
+        text.includes('skin care') || text.includes('pain management') || text.includes('antibiotic')) {
+      return 'Medical / Medication';
+    }
+    
+    // Documentation & Communication
+    if (text.includes('monitoring') || text.includes('communication') || text.includes('vision') ||
+        text.includes('speech') || text.includes('physical conditions') || text.includes('symptoms')) {
+      return 'Documentation & Communication';
+    }
+    
+    return 'Other';
   };
 
   const handleInlinePerDayShiftChange = async (weeklyEntryId, dayIdx, shiftKey, value) => {
@@ -190,6 +256,15 @@ const ResidentDetails = () => {
     return monday.toISOString().split('T')[0];
   };
 
+  // Helper function to convert Monday date to Sunday (backend format)
+  const mondayToSunday = (mondayDate) => {
+    if (!mondayDate) return '';
+    const date = new Date(mondayDate);
+    // Go back one day to get Sunday
+    date.setDate(date.getDate() - 1);
+    return date.toISOString().split('T')[0];
+  };
+
   // Helper function to get week end date (Sunday)
   const getWeekEndDate = (mondayDate) => {
     if (!mondayDate) return '';
@@ -210,6 +285,16 @@ const ResidentDetails = () => {
       setResident(res.data);
       setQuestions(qRes.data);
       setAdls(adlRes.data.results || adlRes.data);
+      
+      // Fetch facility data to get shift_format
+      if (res.data?.facility_section?.facility) {
+        try {
+          const facilityRes = await axios.get(`${API_BASE_URL}/api/facilities/${res.data.facility_section.facility}/`);
+          setFacility(facilityRes.data);
+        } catch (facilityErr) {
+          console.error('Error fetching facility data:', facilityErr);
+        }
+      }
     } catch (err) {
       setError('Failed to fetch resident or ADL data');
     } finally {
@@ -223,21 +308,28 @@ const ResidentDetails = () => {
     
     setWeeklyLoading(true);
     try {
+      // Convert Monday (frontend) to Sunday (backend format)
+      const weekStartSunday = mondayToSunday(selectedWeek);
+      console.log('🔍 Fetching weekly entries - selectedWeek (Monday):', selectedWeek, 'weekStartSunday (backend):', weekStartSunday);
+      
+      // Query backend with the Sunday date that matches backend's week_start_date format
       const response = await axios.get(
-        `${API_BASE_URL}/api/weekly-adls/?resident=${residentId}&page_size=1000`
+        `${API_BASE_URL}/api/weekly-adls/?resident=${residentId}&week_start_date=${weekStartSunday}&page_size=1000`
       );
       
       // Handle paginated response
       const allEntries = response.data.results || response.data;
-      console.log('🔍 All weekly entries:', allEntries.length);
+      console.log('🔍 Fetched weekly entries for week (Sunday):', allEntries.length, 'week_start_date:', weekStartSunday);
       
+      // Filter to ensure we only get entries for this specific week (in case backend returns multiple)
       const weekEntries = allEntries.filter(entry => 
-        entry.week_start_date === selectedWeek
+        entry.week_start_date === weekStartSunday
       );
-      console.log('🔍 Filtered entries for week:', weekEntries.length, 'week:', selectedWeek);
+      console.log('🔍 Filtered entries for week:', weekEntries.length);
       
       setWeeklyEntries(weekEntries);
     } catch (err) {
+      console.error('❌ Error fetching weekly entries:', err);
       setWeeklyError('Failed to fetch weekly entries');
     } finally {
       setWeeklyLoading(false);
@@ -265,8 +357,11 @@ const ResidentDetails = () => {
       };
 
       // Check if entry already exists for this week and question
+      // Convert Monday (selectedWeek) to Sunday (backend format) for comparison
+      const weekStartSunday = mondayToSunday(selectedWeek);
+      // Ensure both IDs are compared as numbers
       const existingEntry = weeklyEntries.find(entry => 
-        entry.adl_question === questionId && entry.week_start_date === selectedWeek
+        Number(entry.adl_question) === Number(questionId) && entry.week_start_date === weekStartSunday
       );
 
       if (existingEntry) {
@@ -301,9 +396,13 @@ const ResidentDetails = () => {
   });
 
   // Map: adl_question.id -> WeeklyADLEntry response (current)
+  // Use Number() to ensure consistent ID comparison (handles string vs number)
   const weeklyEntryMap = {};
   weeklyEntries.forEach(entry => {
-    if (entry.adl_question) weeklyEntryMap[entry.adl_question] = entry;
+    if (entry.adl_question) {
+      const questionId = Number(entry.adl_question);
+      weeklyEntryMap[questionId] = entry;
+    }
   });
   
   console.log('🔍 Weekly entries loaded:', weeklyEntries.length);
@@ -549,37 +648,69 @@ const ResidentDetails = () => {
   if (error) return <Alert severity="error">{error}</Alert>;
   if (!resident) return <Typography>No resident found.</Typography>;
 
+  // Calculate summary stats
+  const completedCount = weeklyEntries.length;
+  const totalHours = weeklyEntries.reduce((sum, entry) => sum + (entry.total_hours_week || 0), 0);
+  const statusCount = weeklyEntries.filter(e => e.status === 'Complete').length;
+  
+  // Group questions by category
+  const questionsByCategory = {};
+  questions.forEach(q => {
+    const category = categorizeQuestion(q.text || q.question_text);
+    if (!questionsByCategory[category]) {
+      questionsByCategory[category] = [];
+    }
+    questionsByCategory[category].push(q);
+  });
+
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ p: 3 }}>
         <Button variant="outlined" onClick={() => navigate(-1)} sx={{ mb: 2 }}>Back</Button>
-        <Typography variant="h4" gutterBottom>Resident Details: {resident.name}</Typography>
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h6">Status:</Typography>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <Select
-                value={resident.status}
-                onChange={handleStatusChange}
-                disabled={statusSaving}
-              >
-                <MenuItem value="New">New</MenuItem>
-                <MenuItem value="Completed">Completed</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-          <Typography>Facility Section: {resident.facility_section}</Typography>
-          <Typography>Facility: {resident.facility_name} (ID: {resident.facility_id})</Typography>
-        </Paper>
-
-        {/* Current Week Info */}
-        <Paper sx={{ p: 2, mb: 2, bgcolor: 'info.50', border: '1px solid', borderColor: 'info.200' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h6" color="info.main">
-              📅 Current Week: {getWeekLabel(selectedWeek)}
+        
+        {/* Sticky Header */}
+        <Paper 
+          sx={{ 
+            p: 2, 
+            mb: 2, 
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
+            bgcolor: 'background.paper',
+            boxShadow: 2,
+            borderBottom: '2px solid',
+            borderColor: 'divider'
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+              {resident.name} — {getWeekLabel(selectedWeek)}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              All data below represents caregiving activities for this specific week (Monday to Sunday)
+            <Button 
+              variant="outlined" 
+              size="small"
+              startIcon={<CalendarIcon />}
+              onClick={() => {
+                // Simple week navigation - go to previous/next week
+                // For now, just show a prompt. Can be enhanced with a proper picker
+                const currentDate = new Date(selectedWeek);
+                const newDate = new Date(currentDate);
+                newDate.setDate(newDate.getDate() + 7); // Next week
+                setSelectedWeek(newDate.toISOString().split('T')[0]);
+              }}
+            >
+              Change Week
+            </Button>
+          </Box>
+          <Typography variant="body2" sx={{ color: '#6f6f6f', mb: 1.5 }}>
+            Status: {statusCount === completedCount && completedCount > 0 ? 'Complete' : 'In Progress'} · {completedCount} ADL {completedCount === 1 ? 'entry' : 'entries'}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 3, borderTop: '1px solid', borderColor: '#eeeeee', pt: 1.5 }}>
+            <Typography variant="body2" sx={{ fontSize: 13, color: '#6f6f6f' }}>
+              <strong style={{ color: '#000' }}>{completedCount}</strong> Questions Completed
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: 13, color: '#6f6f6f' }}>
+              <strong style={{ color: '#000' }}>{totalHours.toFixed(1)}</strong> Total Caregiving Hours
             </Typography>
           </Box>
         </Paper>
@@ -609,88 +740,95 @@ const ResidentDetails = () => {
           {weeklyError && <Alert severity="error" onClose={() => setWeeklyError('')} sx={{ mb: 2 }}>{weeklyError}</Alert>}
           {weeklySuccess && <Alert severity="success" onClose={() => setWeeklySuccess('')} sx={{ mb: 2 }}>{weeklySuccess}</Alert>}
 
-          {/* Weekly Summary */}
-          <Paper sx={{ p: 2, mb: 3, bgcolor: 'primary.50' }}>
-            <Typography variant="h6" gutterBottom>
-              Week Summary: {getWeekLabel(selectedWeek)}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Data represents caregiving activities for this specific week (Monday to Sunday)
-            </Typography>
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={4}>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" color="primary">
-                    {weeklyEntries.length}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Questions Completed
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" color="success.main">
-                    {questions.length > 0 ? Math.round((weeklyEntries.length / questions.length) * 100) : 0}%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Completion Rate
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" color="info.main">
-                    {weeklyEntries.reduce((sum, entry) => sum + (entry.total_hours_week || 0), 0).toFixed(1)}h
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Caregiving Hours
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
-
-          <TableContainer>
-            <Table>
+          <Box sx={{ width: '100%' }}>
+            <TableContainer sx={{ width: '100%' }}>
+              <Table size="small" sx={{ width: '100%' }}>
               <TableHead>
                 <TableRow>
-                  <TableCell width={30}></TableCell>
-                  <TableCell>#</TableCell>
-                  <TableCell>Question</TableCell>
-                  <TableCell>Minutes/Occurrence</TableCell>
-                  <TableCell>Frequency/Week</TableCell>
-                  <TableCell>Total Hours</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell sx={{ width: 30, px: 0.5 }}></TableCell>
+                  <TableCell sx={{ width: 30, px: 0.5 }}>#</TableCell>
+                  <TableCell sx={{ width: '30%', px: 1 }}>Question</TableCell>
+                  <TableCell sx={{ width: 90, px: 0.5 }}>Min/Occ</TableCell>
+                  <TableCell sx={{ width: 80, px: 0.5 }}>Freq/Week</TableCell>
+                  <TableCell sx={{ width: 70, px: 0.5 }}>Total Hrs</TableCell>
+                  <TableCell sx={{ width: 100, px: 0.5 }}>Status</TableCell>
+                  <TableCell sx={{ width: 100, px: 0.5 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {questions.map((q, idx) => {
+                {Object.entries(questionsByCategory).map(([category, categoryQuestions]) => {
+                  const isCategoryExpanded = expandedCategories.has(category);
+                  const categoryQuestionCount = categoryQuestions.length;
+                  
+                  return (
+                    <Fragment key={category}>
+                      {/* Category Header Row */}
+                      <TableRow sx={{ bgcolor: '#f5f5f5', '&:hover': { bgcolor: '#eeeeee' } }}>
+                        <TableCell colSpan={8} sx={{ py: 1, px: 1.5 }}>
+                          <Box 
+                            sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              cursor: 'pointer',
+                              userSelect: 'none'
+                            }}
+                            onClick={() => toggleCategoryExpansion(category)}
+                          >
+                            <IconButton size="small" sx={{ mr: 1 }}>
+                              {isCategoryExpanded ? <ExpandLessIcon /> : <ChevronRightIcon />}
+                            </IconButton>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: 13 }}>
+                              {category} ({categoryQuestionCount} {categoryQuestionCount === 1 ? 'question' : 'questions'})
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                      
+                      {/* Category Questions */}
+                      <Collapse in={isCategoryExpanded} timeout="auto" unmountOnExit>
+                        {categoryQuestions.map((q, categoryIdx) => {
+                          const globalIdx = questions.findIndex(q2 => q2.id === q.id);
+                          const isEven = categoryIdx % 2 === 0;
                   // Always show weekly ADL data for consistency with chart
+                  // Convert Monday (selectedWeek) to Sunday (backend format) for comparison
+                  const weekStartSunday = mondayToSunday(selectedWeek);
+                  // Ensure both IDs are compared as numbers (in case one is string)
                   const weeklyEntry = weeklyEntries.find(entry => 
-                    entry.adl_question === q.id && entry.week_start_date === selectedWeek
+                    Number(entry.adl_question) === Number(q.id) && entry.week_start_date === weekStartSunday
                   );
                   
                   const isExpanded = expandedRows.has(q.id);
                   
                   // Convert per_day_data to per_day_shift_times for display
+                  // Handle BOTH old format (MonShift1Time: 2) and new format (Monday: {Day: 2})
                   let perDayShiftTimes = {};
                   if (weeklyEntry?.per_day_data) {
-                    days.forEach((day, dayIdx) => {
-                      const dayPrefix = dayPrefixes[dayIdx];
-                      const dayData = weeklyEntry.per_day_data[day];
-                      if (dayData && typeof dayData === 'object') {
-                        perDayShiftTimes[`${dayPrefix}Shift1Time`] = dayData.Day || 0;
-                        perDayShiftTimes[`${dayPrefix}Shift2Time`] = dayData.Swing || 0;
-                        perDayShiftTimes[`${dayPrefix}Shift3Time`] = dayData.NOC || 0;
-                      }
-                    });
+                    const perDayData = weeklyEntry.per_day_data;
+                    // Check if it's old format (has keys like MonShift1Time)
+                    const hasOldFormat = Object.keys(perDayData).some(key => 
+                      typeof key === 'string' && key.includes('Shift') && key.includes('Time')
+                    );
+                    
+                    if (hasOldFormat) {
+                      // Old format: already in MonShift1Time format, use directly
+                      perDayShiftTimes = { ...perDayData };
+                    } else {
+                      // New format: convert from {Monday: {Day: 2, Swing: 0, NOC: 0}}
+                      days.forEach((day, dayIdx) => {
+                        const dayPrefix = dayPrefixes[dayIdx];
+                        const dayData = perDayData[day];
+                        if (dayData && typeof dayData === 'object') {
+                          perDayShiftTimes[`${dayPrefix}Shift1Time`] = dayData.Day || 0;
+                          perDayShiftTimes[`${dayPrefix}Shift2Time`] = dayData.Swing || 0;
+                          perDayShiftTimes[`${dayPrefix}Shift3Time`] = dayData.NOC || 0;
+                        }
+                      });
+                    }
                   }
                   
-                  return (
-                    <Fragment key={q.id}>
-                      <TableRow>
+                          return (
+                            <Fragment key={q.id}>
+                              <TableRow sx={{ bgcolor: isEven ? '#ffffff' : '#fafafa' }}>
                         <TableCell>
                           {weeklyEntry && (
                             <IconButton
@@ -701,237 +839,272 @@ const ResidentDetails = () => {
                             </IconButton>
                           )}
                         </TableCell>
-                        <TableCell>{idx + 1}</TableCell>
-                        <TableCell>{q.text}</TableCell>
-                      <TableCell>
-                        {weeklyEntry ? (
-                          <TextField
-                            size="small"
-                            type="number"
-                            value={weeklyEntry.minutes_per_occurrence || 0}
-                            onChange={async (e) => {
-                              const newMinutes = parseInt(e.target.value) || 0;
-                              const newTotal = newMinutes * (weeklyEntry.frequency_per_week || 0);
-                              const updatedEntry = { 
-                                ...weeklyEntry, 
-                                minutes_per_occurrence: newMinutes, 
-                                total_minutes_week: newTotal, 
-                                total_hours_week: newTotal / 60 
-                              };
-                              setWeeklyEntries(prev => prev.map(entry => 
-                                entry.id === weeklyEntry.id ? updatedEntry : entry
-                              ));
-                              
-                              // Auto-save to backend
-                              try {
-                                await axios.patch(`${API_BASE_URL}/api/weekly-adls/${weeklyEntry.id}/`, {
-                                  minutes_per_occurrence: newMinutes,
-                                  total_minutes_week: newTotal,
-                                  total_hours_week: newTotal / 60,
-                                  per_day_data: weeklyEntry.per_day_data || {}
-                                });
-                              } catch (err) {
-                                console.error('Failed to auto-save:', err);
-                              }
-                            }}
-                            inputProps={{ min: 0 }}
-                            sx={{ width: 80 }}
-                          />
-                        ) : (
-                          <TextField
-                            size="small"
-                            type="number"
-                            value={0}
-                            disabled
-                            inputProps={{ min: 0 }}
-                            sx={{ width: 80 }}
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {weeklyEntry ? (
-                          <TextField
-                            size="small"
-                            type="number"
-                            value={weeklyEntry.frequency_per_week || 0}
-                            onChange={async (e) => {
-                              const newFreq = parseInt(e.target.value) || 0;
-                              const newTotal = (weeklyEntry.minutes_per_occurrence || 0) * newFreq;
-                              const updatedEntry = { 
-                                ...weeklyEntry, 
-                                frequency_per_week: newFreq, 
-                                total_minutes_week: newTotal, 
-                                total_hours_week: newTotal / 60 
-                              };
-                              setWeeklyEntries(prev => prev.map(entry => 
-                                entry.id === weeklyEntry.id ? updatedEntry : entry
-                              ));
-                              
-                              // Auto-save to backend
-                              try {
-                                await axios.patch(`${API_BASE_URL}/api/weekly-adls/${weeklyEntry.id}/`, {
-                                  frequency_per_week: newFreq,
-                                  total_minutes_week: newTotal,
-                                  total_hours_week: newTotal / 60,
-                                  per_day_data: weeklyEntry.per_day_data || {}
-                                });
-                              } catch (err) {
-                                console.error('Failed to auto-save:', err);
-                              }
-                            }}
-                            inputProps={{ min: 0 }}
-                            sx={{ width: 80 }}
-                          />
-                        ) : (
-                          <TextField
-                            size="small"
-                            type="number"
-                            value={0}
-                            disabled
-                            inputProps={{ min: 0 }}
-                            sx={{ width: 80 }}
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {weeklyEntry ? (
-                          <Typography variant="body2" color="primary">
-                            {weeklyEntry.total_hours_week?.toFixed(1) || 0}h
-                          </Typography>
-                        ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            0.0h
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {weeklyEntry ? (
-                          <Select
-                            size="small"
-                            value={weeklyEntry.status || 'Complete'}
-                            onChange={(e) => {
-                              setWeeklyEntries(prev => prev.map(entry => 
-                                entry.id === weeklyEntry.id ? { ...entry, status: e.target.value } : entry
-                              ));
-                            }}
-                            sx={{ minWidth: 100 }}
-                          >
-                            <MenuItem value="Complete">Complete</MenuItem>
-                            <MenuItem value="Incomplete">Incomplete</MenuItem>
-                            <MenuItem value="Not Applicable">Not Applicable</MenuItem>
-                          </Select>
-                        ) : (
-                          <Select
-                            size="small"
-                            value="Complete"
-                            disabled
-                            sx={{ minWidth: 100 }}
-                          >
-                            <MenuItem value="Complete">Complete</MenuItem>
-                            <MenuItem value="Incomplete">Incomplete</MenuItem>
-                            <MenuItem value="Not Applicable">Not Applicable</MenuItem>
-                          </Select>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {weeklyEntry ? (
-                          <div>
-                            <Button 
-                              size="small" 
-                              variant="outlined" 
-                              onClick={() => handleOpenModal(q)}
-                            >
-                              Edit Details
-                            </Button>
-                            <Button 
-                              size="small" 
-                              variant="outlined" 
-                              color="error"
-                              onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this weekly ADL entry?')) {
-                                  setWeeklyEntries(prev => prev.filter(entry => entry.id !== weeklyEntry.id));
-                                  // Also delete from backend
-                                  axios.delete(`${API_BASE_URL}/api/weekly-adls/${weeklyEntry.id}/`);
-                                }
-                              }}
-                              sx={{ ml: 1 }}
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button 
-                            size="small" 
-                            variant="contained" 
-                            onClick={() => {
-                              setModalQuestion(q);
-                              setModalForm({ 
-                                minutes: '', 
-                                frequency: '', 
-                                per_day_shift_times: {} 
-                              });
-                              setModalAdlId(null);
-                              setModalError('');
-                              setModalOpen(true);
-                            }}
-                          >
-                            Add Entry
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                    {isExpanded && weeklyEntry && (
-                      <TableRow>
-                        <TableCell colSpan={8} sx={{ py: 2, bgcolor: 'grey.50' }}>
-                          <Box>
-                            <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                              Day-wise Frequency Entry (times per shift)
-                            </Typography>
-                            <TableContainer>
-                              <Table size="small">
-                                <TableHead>
-                                  <TableRow>
-                                    <TableCell>Day</TableCell>
-                                    {shifts.map((shift) => (
-                                      <TableCell key={shift.key} align="center">{shift.label}</TableCell>
-                                    ))}
-                                  </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                  {days.map((day, dayIdx) => (
-                                    <TableRow key={day}>
-                                      <TableCell>{day}</TableCell>
-                                      {shifts.map((shift) => {
-                                        const prefix = dayPrefixes[dayIdx];
-                                        const field = `${prefix}${shift.key}Time`;
-                                        return (
-                                          <TableCell key={shift.key} align="center">
-                                            <TextField
-                                              type="number"
-                                              size="small"
-                                              value={perDayShiftTimes[field] || ''}
-                                              onChange={(e) => handleInlinePerDayShiftChange(weeklyEntry.id, dayIdx, shift.key, e.target.value)}
-                                              inputProps={{ min: 0 }}
-                                              sx={{ width: 70 }}
-                                            />
-                                          </TableCell>
-                                        );
-                                      })}
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </TableContainer>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </Fragment>
+                        <TableCell sx={{ px: 1 }}>{globalIdx + 1}</TableCell>
+                                <TableCell sx={{ px: 1 }}>
+                                  <Typography 
+                                    variant="body2" 
+                                    sx={{ 
+                                      fontSize: 11,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      display: '-webkit-box',
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: 'vertical',
+                                      lineHeight: 1.3
+                                    }}
+                                    title={q.text}
+                                  >
+                                    {q.text}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell sx={{ px: 1 }}>
+                                  {weeklyEntry ? (
+                                    <TextField
+                                      size="small"
+                                      type="number"
+                                      value={weeklyEntry.minutes_per_occurrence || 0}
+                                      onChange={async (e) => {
+                                        const newMinutes = parseInt(e.target.value) || 0;
+                                        const newTotal = newMinutes * (weeklyEntry.frequency_per_week || 0);
+                                        const updatedEntry = { 
+                                          ...weeklyEntry, 
+                                          minutes_per_occurrence: newMinutes, 
+                                          total_minutes_week: newTotal, 
+                                          total_hours_week: newTotal / 60 
+                                        };
+                                        setWeeklyEntries(prev => prev.map(entry => 
+                                          entry.id === weeklyEntry.id ? updatedEntry : entry
+                                        ));
+                                        
+                                        // Auto-save to backend
+                                        try {
+                                          await axios.patch(`${API_BASE_URL}/api/weekly-adls/${weeklyEntry.id}/`, {
+                                            minutes_per_occurrence: newMinutes,
+                                            total_minutes_week: newTotal,
+                                            total_hours_week: newTotal / 60,
+                                            per_day_data: weeklyEntry.per_day_data || {}
+                                          });
+                                        } catch (err) {
+                                          console.error('Failed to auto-save:', err);
+                                        }
+                                      }}
+                                      inputProps={{ min: 0 }}
+                                      sx={{ width: 70 }}
+                                    />
+                                  ) : (
+                                    <TextField
+                                      size="small"
+                                      type="number"
+                                      value={0}
+                                      disabled
+                                      inputProps={{ min: 0 }}
+                                      sx={{ width: 70 }}
+                                    />
+                                  )}
+                                </TableCell>
+                                <TableCell sx={{ px: 1 }}>
+                                  {weeklyEntry ? (
+                                    <TextField
+                                      size="small"
+                                      type="number"
+                                      value={weeklyEntry.frequency_per_week || 0}
+                                      onChange={async (e) => {
+                                        const newFreq = parseInt(e.target.value) || 0;
+                                        const newTotal = (weeklyEntry.minutes_per_occurrence || 0) * newFreq;
+                                        const updatedEntry = { 
+                                          ...weeklyEntry, 
+                                          frequency_per_week: newFreq, 
+                                          total_minutes_week: newTotal, 
+                                          total_hours_week: newTotal / 60 
+                                        };
+                                        setWeeklyEntries(prev => prev.map(entry => 
+                                          entry.id === weeklyEntry.id ? updatedEntry : entry
+                                        ));
+                                        
+                                        // Auto-save to backend
+                                        try {
+                                          await axios.patch(`${API_BASE_URL}/api/weekly-adls/${weeklyEntry.id}/`, {
+                                            frequency_per_week: newFreq,
+                                            total_minutes_week: newTotal,
+                                            total_hours_week: newTotal / 60,
+                                            per_day_data: weeklyEntry.per_day_data || {}
+                                          });
+                                        } catch (err) {
+                                          console.error('Failed to auto-save:', err);
+                                        }
+                                      }}
+                                      inputProps={{ min: 0 }}
+                                      sx={{ width: 60 }}
+                                    />
+                                  ) : (
+                                    <TextField
+                                      size="small"
+                                      type="number"
+                                      value={0}
+                                      disabled
+                                      inputProps={{ min: 0 }}
+                                      sx={{ width: 60 }}
+                                    />
+                                  )}
+                                </TableCell>
+                                <TableCell sx={{ px: 0.5 }}>
+                                  {weeklyEntry ? (
+                                    <Typography variant="body2" color="primary" sx={{ fontSize: 11 }}>
+                                      {weeklyEntry.total_hours_week?.toFixed(1) || 0}h
+                                    </Typography>
+                                  ) : (
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
+                                      0.0h
+                                    </Typography>
+                                  )}
+                                </TableCell>
+                                <TableCell sx={{ px: 0.5 }}>
+                                  {weeklyEntry ? (
+                                    <Select
+                                      size="small"
+                                      value={weeklyEntry.status || 'Complete'}
+                                      onChange={(e) => {
+                                        setWeeklyEntries(prev => prev.map(entry => 
+                                          entry.id === weeklyEntry.id ? { ...entry, status: e.target.value } : entry
+                                        ));
+                                      }}
+                                      sx={{ width: 95, fontSize: 11 }}
+                                    >
+                                      <MenuItem value="Complete" sx={{ fontSize: 11 }}>Complete</MenuItem>
+                                      <MenuItem value="Incomplete" sx={{ fontSize: 11 }}>Incomplete</MenuItem>
+                                      <MenuItem value="Not Applicable" sx={{ fontSize: 11 }}>N/A</MenuItem>
+                                    </Select>
+                                  ) : (
+                                    <Select
+                                      size="small"
+                                      value="Complete"
+                                      disabled
+                                      sx={{ width: 95, fontSize: 11 }}
+                                    >
+                                      <MenuItem value="Complete" sx={{ fontSize: 11 }}>Complete</MenuItem>
+                                      <MenuItem value="Incomplete" sx={{ fontSize: 11 }}>Incomplete</MenuItem>
+                                      <MenuItem value="Not Applicable" sx={{ fontSize: 11 }}>N/A</MenuItem>
+                                    </Select>
+                                  )}
+                                </TableCell>
+                                <TableCell sx={{ px: 0.5 }}>
+                                  {weeklyEntry ? (
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'nowrap' }}>
+                                      <Button 
+                                        size="small" 
+                                        variant="text" 
+                                        onClick={() => handleOpenModal(q)}
+                                        sx={{ 
+                                          fontSize: 13, 
+                                          py: 0.2, 
+                                          px: 0.6, 
+                                          minWidth: 'auto',
+                                          color: '#2563eb',
+                                          fontWeight: 500,
+                                          textTransform: 'none',
+                                          '&:hover': {
+                                            bgcolor: 'transparent',
+                                            color: '#1e40af'
+                                          }
+                                        }}
+                                      >
+                                        Edit
+                                      </Button>
+                                      <Button 
+                                        size="small" 
+                                        variant="outlined" 
+                                        color="error"
+                                        onClick={() => {
+                                          if (window.confirm('Are you sure you want to delete this weekly ADL entry?')) {
+                                            setWeeklyEntries(prev => prev.filter(entry => entry.id !== weeklyEntry.id));
+                                            // Also delete from backend
+                                            axios.delete(`${API_BASE_URL}/api/weekly-adls/${weeklyEntry.id}/`);
+                                          }
+                                        }}
+                                        sx={{ fontSize: 10, py: 0.25, px: 0.75, minWidth: 'auto' }}
+                                      >
+                                        Del
+                                      </Button>
+                                    </Box>
+                                  ) : (
+                                    <Button 
+                                      size="small" 
+                                      variant="contained" 
+                                      onClick={() => {
+                                        setModalQuestion(q);
+                                        setModalForm({ 
+                                          minutes: '', 
+                                          frequency: '', 
+                                          per_day_shift_times: {} 
+                                        });
+                                        setModalAdlId(null);
+                                        setModalError('');
+                                        setModalOpen(true);
+                                      }}
+                                      sx={{ fontSize: 10, py: 0.25, px: 1, minWidth: 'auto' }}
+                                    >
+                                      Add Ent
+                                    </Button>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                              {isExpanded && weeklyEntry && (
+                                <TableRow sx={{ bgcolor: isEven ? '#ffffff' : '#fafafa' }}>
+                                  <TableCell colSpan={8} sx={{ py: 2, bgcolor: 'grey.50' }}>
+                                    <Box>
+                                      <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                                        Day-wise Frequency Entry (times per shift)
+                                      </Typography>
+                                      <TableContainer>
+                                        <Table size="small">
+                                          <TableHead>
+                                            <TableRow>
+                                              <TableCell>Day</TableCell>
+                                              {shifts.map((shift) => (
+                                                <TableCell key={shift.key} align="center">{shift.label}</TableCell>
+                                              ))}
+                                            </TableRow>
+                                          </TableHead>
+                                          <TableBody>
+                                            {days.map((day, dayIdx) => (
+                                              <TableRow key={day}>
+                                                <TableCell>{day}</TableCell>
+                                                {shifts.map((shift) => {
+                                                  const prefix = dayPrefixes[dayIdx];
+                                                  const field = `${prefix}${shift.key}Time`;
+                                                  return (
+                                                    <TableCell key={shift.key} align="center">
+                                                      <TextField
+                                                        type="number"
+                                                        size="small"
+                                                        value={perDayShiftTimes[field] || ''}
+                                                        onChange={(e) => handleInlinePerDayShiftChange(weeklyEntry.id, dayIdx, shift.key, e.target.value)}
+                                                        inputProps={{ min: 0 }}
+                                                        sx={{ width: 70 }}
+                                                      />
+                                                    </TableCell>
+                                                  );
+                                                })}
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      </TableContainer>
+                                    </Box>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </Fragment>
+                          );
+                        })}
+                      </Collapse>
+                    </Fragment>
                   );
                 })}
               </TableBody>
             </Table>
           </TableContainer>
+          </Box>
         </Paper>
       </Box>
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="sm" fullWidth>

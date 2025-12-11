@@ -23,12 +23,14 @@ import {
   MenuItem,
   Snackbar,
   Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  Chip,
 } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
-import ADLList from '../Dashboard/ADLList';
-import ADLUpload from '../Dashboard/ADLUpload';
 import ADLAnalytics from '../Dashboard/Analytics';
 import CaregivingSummaryChart from '../Dashboard/CaregivingSummaryChart';
 import { API_BASE_URL } from '../../config';
@@ -136,7 +138,8 @@ const FacilityPage = () => {
         address,
         city,
         state,
-        zip_code
+        zip_code,
+        shift_format
       } = facilityForm;
       const payload = {
         name,
@@ -148,7 +151,8 @@ const FacilityPage = () => {
         address,
         city,
         state,
-        zip_code
+        zip_code,
+        shift_format
       };
       await axios.put(`${API_BASE_URL}/api/facilities/${facility.id}/`, payload);
       setFacility({ ...facility, ...payload });
@@ -322,25 +326,53 @@ const FacilityPage = () => {
   );
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
       {/* Back Button */}
       <Button
         variant="outlined"
         startIcon={<ArrowBackIcon />}
         onClick={handleBackToFacilities}
-        sx={{ mb: 3 }}
+        sx={{ mb: 2 }}
       >
         Back to Facilities
       </Button>
 
       {/* Facility Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          {facility.name}
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          {facility.facility_type} • {facility.address}, {facility.city}, {facility.state}
-        </Typography>
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+          <Box>
+            <Typography variant="h5" gutterBottom>
+              {facility.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {facility.facility_type} • {facility.address}, {facility.city}, {facility.state}
+            </Typography>
+          </Box>
+          <Chip 
+            label={facility.shift_format === '2_shift' ? '2-Shift (Day/NOC)' : '3-Shift (Day/Swing/NOC)'}
+            color={facility.shift_format === '2_shift' ? 'primary' : 'secondary'}
+            sx={{ ml: 2 }}
+          />
+        </Box>
+        
+        {/* Shift Format Display (Read-only for non-admins) */}
+        {/* Shift format configuration is now only available in Admin > Facility Management */}
+        <Paper sx={{ p: 2, mb: 2, bgcolor: '#f5f5f5' }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+            Shift Format
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontSize: 12 }}>
+            Current shift format: <strong>{facility.shift_format === '2_shift' ? '2-Shift (Day/NOC)' : '3-Shift (Day/Swing/NOC)'}</strong>
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: 11 }}>
+            {facility.shift_format === '2_shift'
+              ? 'Oregon facilities: 6am-6pm Day shift, 6pm-6am NOC shift (No Swing shift)'
+              : 'California facilities: 8-hour Day, Swing, and NOC shifts'}
+          </Typography>
+          <Alert severity="info" sx={{ mt: 2, fontSize: 12 }}>
+            To change the shift format, please contact an administrator or go to <strong>Admin → Facility Management</strong>.
+          </Alert>
+        </Paper>
       </Box>
 
       {/* Caregiving Summary Chart */}
@@ -351,10 +383,8 @@ const FacilityPage = () => {
       />
 
       {/* Classic ABST Tabs */}
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
         <Tab label="Residents" />
-        <Tab label="ADL Data" />
-        <Tab label="Upload ADL" />
         <Tab label="Analytics" />
       </Tabs>
 
@@ -362,8 +392,8 @@ const FacilityPage = () => {
       {tab === 0 && (
         <>
           {/* Residents Table and Import UI (existing code) */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 3 }}>
-            <Typography variant="h5">Residents</Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+            <Typography variant="h6">Residents</Typography>
             <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
               <Button variant="contained" onClick={() => setAddOpen(true)}>Add Resident</Button>
               <Button variant="outlined" onClick={handleSectionDialogOpen}>Add Section</Button>
@@ -585,12 +615,6 @@ const FacilityPage = () => {
         </>
       )}
       {tab === 1 && (
-        <ADLList facilityId={facilityId} />
-      )}
-      {tab === 2 && (
-        <ADLUpload facilityId={facilityId} selectedWeek={selectedWeek} />
-      )}
-      {tab === 3 && (
         <ADLAnalytics facilityId={facilityId} />
       )}
     </Container>

@@ -49,6 +49,7 @@ const StaffManagement = ({ facilityId }) => {
     hire_date: '',
     status: 'active',
     max_hours: 40,
+    hourly_rate: '',
     notes: '',
   });
 
@@ -105,6 +106,7 @@ const StaffManagement = ({ facilityId }) => {
         hire_date: staff.hire_date ? staff.hire_date.split('T')[0] : '',
         status: staff.status || 'active',
         max_hours: staff.max_hours || 40,
+        hourly_rate: staff.hourly_rate || '',
         notes: staff.notes || '',
       });
     } else {
@@ -118,6 +120,7 @@ const StaffManagement = ({ facilityId }) => {
         hire_date: '',
         status: 'active',
         max_hours: 40,
+        hourly_rate: '',
         notes: '',
       });
     }
@@ -303,6 +306,7 @@ const StaffManagement = ({ facilityId }) => {
               <TableCell>Status</TableCell>
               <TableCell>Hire Date</TableCell>
               <TableCell>Max Hours</TableCell>
+              <TableCell>Hourly Rate</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -340,6 +344,9 @@ const StaffManagement = ({ facilityId }) => {
                 </TableCell>
                 <TableCell>{member.max_hours || 40}h</TableCell>
                 <TableCell>
+                  {member.hourly_rate ? `$${parseFloat(member.hourly_rate).toFixed(2)}` : '-'}
+                </TableCell>
+                <TableCell>
                   <IconButton
                     size="small"
                     onClick={() => handleOpenDialog(member)}
@@ -360,7 +367,7 @@ const StaffManagement = ({ facilityId }) => {
             ))}
             {staff.length === 0 && !loading && (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={8} align="center">
                   <Typography variant="body2" color="text.secondary">
                     No staff members found. Add your first staff member to get started.
                   </Typography>
@@ -472,6 +479,15 @@ const StaffManagement = ({ facilityId }) => {
               onChange={(e) => handleInputChange('max_hours', parseInt(e.target.value) || 40)}
               fullWidth
               inputProps={{ min: 1, max: 168 }}
+            />
+            <TextField
+              label="Hourly Rate"
+              type="number"
+              value={formData.hourly_rate}
+              onChange={(e) => handleInputChange('hourly_rate', e.target.value ? parseFloat(e.target.value) : '')}
+              fullWidth
+              inputProps={{ min: 0, step: 0.01 }}
+              helperText="Hourly pay rate (synced from Paycom)"
             />
             <TextField
               label="Notes"

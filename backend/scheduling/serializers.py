@@ -13,7 +13,7 @@ class StaffSerializer(serializers.ModelSerializer):
         model = Staff
         fields = [
             'id', 'first_name', 'last_name', 'email', 'employee_id', 'role',
-            'hire_date', 'status', 'max_hours', 'notes', 'facility', 'facility_id',
+            'hire_date', 'status', 'max_hours', 'hourly_rate', 'notes', 'facility', 'facility_id',
             'created_at', 'updated_at', 'full_name'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

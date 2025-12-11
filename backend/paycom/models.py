@@ -115,6 +115,7 @@ class PaycomSyncLog(models.Model):
         ('employee_directory', 'Employee Directory'),
         ('employee_dates', 'Employee Dates'),
         ('employee_payees', 'Employee Payees'),
+        ('rate_history', 'Rate History'),
         ('all', 'All Reports'),
     ]
     

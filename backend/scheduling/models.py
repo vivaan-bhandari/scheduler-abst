@@ -29,6 +29,7 @@ class Staff(models.Model):
     hire_date = models.DateField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     max_hours = models.PositiveIntegerField(default=40, validators=[MinValueValidator(1), MaxValueValidator(168)])
+    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Hourly pay rate from Paycom")
     notes = models.TextField(blank=True)
     facility = models.ForeignKey('residents.Facility', on_delete=models.CASCADE, related_name='staff')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -51,6 +52,7 @@ class ShiftTemplate(models.Model):
         ('day', 'Day'),
         ('swing', 'Swing'),
         ('noc', 'NOC'),
+        ('night', 'Night'),  # For 2-shift format (12-hour shifts)
         ('custom', 'Custom'),
     ]
     

@@ -12,7 +12,8 @@ PAYCOM_TO_FACILITY_MAPPING = {
     'Posada SL': 'La Posada Senior Living',
     'Markham': 'Markham House Assisted Living',
     'Arbor MC': 'Mill View Memory Care',
-    'Corporate': 'Buena Vista',  # Map corporate to main facility
+    # Note: 'Corporate' employees are admin staff not assigned to facilities
+    # They are filtered out during sync and not added to Staff model
 }
 
 def get_facility_name_from_paycom_location(paycom_location):

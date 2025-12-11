@@ -22,7 +22,7 @@ import {
 import axios from 'axios';
 import { API_BASE_URL } from '../../config';
 
-const ADLUpload = ({ onSuccess, selectedWeek }) => {
+const ADLUpload = ({ onSuccess, selectedWeek, facilityId }) => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -34,6 +34,11 @@ const ADLUpload = ({ onSuccess, selectedWeek }) => {
     const file = event.target.files[0];
     if (!file) return;
     
+    if (!facilityId) {
+      setError('Please select a facility first.');
+      return;
+    }
+    
     setSelectedFile(file);
     setUploading(true);
     setImportDetails(null);
@@ -42,6 +47,11 @@ const ADLUpload = ({ onSuccess, selectedWeek }) => {
     
     const formData = new FormData();
     formData.append('file', file);
+    
+    // Add facility_id (required for ADL upload)
+    if (facilityId) {
+      formData.append('facility_id', facilityId);
+    }
     
     // Add week dates if selectedWeek is provided
     if (selectedWeek) {
@@ -64,7 +74,8 @@ const ADLUpload = ({ onSuccess, selectedWeek }) => {
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error('Upload error:', err);
-      setError(err.response?.data?.message || 'Failed to upload file. Please check the file format and try again.');
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to upload file. Please check the file format and try again.';
+      setError(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -110,6 +121,14 @@ const ADLUpload = ({ onSuccess, selectedWeek }) => {
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Upload Real-World ADL Data
                 </Typography>
+                
+                {!facilityId && (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      <strong>Warning:</strong> Please select a facility first. The upload requires a facility to be selected.
+                    </Typography>
+                  </Alert>
+                )}
                 
                 <Typography variant="body2" sx={{ mb: 2 }}>
                   Upload an Excel (.xlsx, .xls) or CSV file containing ADL data from your facility. 

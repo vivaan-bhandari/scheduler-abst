@@ -4,13 +4,7 @@ import axios from 'axios';
 import CloseIcon from '@mui/icons-material/Close';
 import { API_BASE_URL } from '../../config';
 
-const shiftLabels = ['Day', 'Swing', 'NOC'];
 const days = ['Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun'];
-const shiftMapping = {
-  'Day': 'Shift1',
-  'Swing': 'Shift2', 
-  'NOC': 'Shift3'
-};
 
 const ADLList = ({ facilityId }) => {
   const [residents, setResidents] = useState([]);
@@ -18,16 +12,49 @@ const ADLList = ({ facilityId }) => {
   const [loading, setLoading] = useState(true);
   const [selectedResident, setSelectedResident] = useState('');
   const [adls, setAdls] = useState([]);
+  const [facility, setFacility] = useState(null); // Store facility data for shift_format
   const [editOpen, setEditOpen] = useState(false);
   const [editAdl, setEditAdl] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardIndex, setWizardIndex] = useState(0);
   const [wizardForm, setWizardForm] = useState({});
+  
+  // Get shift labels and mapping based on facility format
+  const getShiftLabels = () => {
+    if (facility?.shift_format === '2_shift') {
+      return ['Day', 'NOC'];
+    }
+    return ['Day', 'Swing', 'NOC'];
+  };
+  
+  const getShiftMapping = () => {
+    if (facility?.shift_format === '2_shift') {
+      return {
+        'Day': 'Shift1',
+        'NOC': 'Shift3'
+      };
+    }
+    return {
+      'Day': 'Shift1',
+      'Swing': 'Shift2', 
+      'NOC': 'Shift3'
+    };
+  };
+  
+  const shiftLabels = getShiftLabels();
+  const shiftMapping = getShiftMapping();
 
   useEffect(() => {
     if (facilityId) {
       setLoading(true);
+      // Fetch facility data to get shift_format
+      axios.get(`${API_BASE_URL}/api/facilities/${facilityId}/`).then(facilityRes => {
+        setFacility(facilityRes.data);
+      }).catch(err => {
+        console.error('Error fetching facility data:', err);
+      });
+      
       // First get all residents
       axios.get(`${API_BASE_URL}/api/residents/?facility_id=${facilityId}&page_size=1000`).then(res => {
         const allResidents = res.data.results || res.data;

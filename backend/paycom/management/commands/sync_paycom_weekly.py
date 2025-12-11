@@ -22,7 +22,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--report-type',
             type=str,
-            choices=['employee_directory', 'employee_dates', 'employee_payees', 'all'],
+            choices=['employee_directory', 'employee_dates', 'employee_payees', 'rate_history', 'all'],
             default='all',
             help='Type of report to sync (default: all)'
         )

@@ -309,6 +309,7 @@ const DailyTimeTracking = ({ facilityId }) => {
                         <TableCell>Clock Out</TableCell>
                         <TableCell>Hours Worked</TableCell>
                         <TableCell>Status</TableCell>
+                        <TableCell>Hourly Rate</TableCell>
                         <TableCell>Regular Hours</TableCell>
                         <TableCell>Overtime Hours</TableCell>
                       </TableRow>
@@ -356,6 +357,11 @@ const DailyTimeTracking = ({ facilityId }) => {
                               color={getStatusColor(entry.clock_out)}
                               size="small"
                             />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight="medium">
+                              {entry.hourly_rate ? `$${parseFloat(entry.hourly_rate).toFixed(2)}` : 'N/A'}
+                            </Typography>
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2" color="success.main">

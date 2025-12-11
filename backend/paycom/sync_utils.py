@@ -97,6 +97,9 @@ def sync_paycom_to_staff():
                         existing_staff.role = staff_role  # CRITICAL: Update role
                         existing_staff.status = 'active'  # Ensure active status
                         existing_staff.max_hours = paycom_emp.max_hours_per_week
+                        # Update hourly rate from Paycom if available
+                        if paycom_emp.hourly_rate:
+                            existing_staff.hourly_rate = paycom_emp.hourly_rate
                         existing_staff.facility = facility
                         existing_staff.save()
                         
@@ -128,6 +131,7 @@ def sync_paycom_to_staff():
                             hire_date=paycom_emp.hire_date or timezone.now().date(),
                             status='active',  # Always create as active (we're only syncing active Paycom employees)
                             max_hours=paycom_emp.max_hours_per_week,
+                            hourly_rate=paycom_emp.hourly_rate,  # Sync hourly rate from Paycom
                             facility=facility,
                             notes=f"Synced from Paycom on {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"
                         )
@@ -192,6 +196,10 @@ def sync_paycom_to_staff():
                     staff.role = staff_role  # Update role in case position changed (e.g., MedTech/Caregiver -> med_tech)
                     staff.status = 'active'  # Ensure active status (we're only syncing active Paycom employees)
                     staff.max_hours = paycom_emp.max_hours_per_week
+                    
+                    # Update hourly rate from Paycom if available
+                    if paycom_emp.hourly_rate:
+                        staff.hourly_rate = paycom_emp.hourly_rate
                     
                     # IMPORTANT: Update facility if it's wrong (fixes Veronica issue)
                     if correct_facility and staff.facility != correct_facility:
@@ -301,6 +309,7 @@ def get_or_create_facility_for_employee(paycom_employee):
     """
     Map Paycom employee to existing Facility based on location description
     Uses facility_mapping.py for consistent mapping
+    Skips Corporate employees (admin staff not assigned to facilities)
     """
     from .facility_mapping import get_facility_from_paycom_location
     
@@ -309,6 +318,12 @@ def get_or_create_facility_for_employee(paycom_employee):
         return None
     
     location_desc = paycom_employee.location_description.strip()
+    location_lower = location_desc.lower()
+    
+    # Skip Corporate employees - they are admin staff not assigned to facilities
+    if 'corporate' in location_lower:
+        logger.info(f"Skipping Corporate employee {paycom_employee.employee_id} ({paycom_employee.first_name} {paycom_employee.last_name}) - admin staff not used in facility scheduling")
+        return None
     
     # Use the centralized facility mapping function
     facility = get_facility_from_paycom_location(location_desc)
@@ -318,7 +333,7 @@ def get_or_create_facility_for_employee(paycom_employee):
         return facility
     
     # Try partial matching as fallback (case-insensitive)
-    location_lower = location_desc.lower()
+    # location_lower already defined above
     
     # Try to find facility by partial match in location description
     if 'posada' in location_lower or 'la posada' in location_lower:

@@ -53,6 +53,7 @@ const AccessManagement = () => {
     if (tab === 0) fetchPendingRequests();
     if (tab === 1) fetchAllUsersAndAccess();
     if (tab === 2) fetchFacilities();
+    if (tab === 3) fetchFacilities(); // Facility Management tab
   }, [tab]);
 
   const fetchFacilities = async () => {
@@ -198,6 +199,7 @@ const AccessManagement = () => {
         <Tab label={<Box><b>Pending Requests</b><Typography variant="caption" display="block">Approve or deny new access requests</Typography></Box>} />
         <Tab label={<Box><b>User Access Matrix</b><Typography variant="caption" display="block">See all users and their facility access</Typography></Box>} />
         <Tab label={<Box><b>Assign Access</b><Typography variant="caption" display="block">Superadmin: Assign facility access to users</Typography></Box>} />
+        <Tab label={<Box><b>Facility Management</b><Typography variant="caption" display="block">Admin: Manage facility shift formats and settings</Typography></Box>} />
       </Tabs>
       {tab === 0 && (
         <Card>
@@ -511,7 +513,140 @@ const AccessManagement = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      
+      {/* Facility Management Tab */}
+      {tab === 3 && (
+        <Card>
+          <CardHeader
+            avatar={<AdminPanelSettings sx={{ fontSize: 32, color: 'primary.main' }} />}
+            title="Facility Management"
+            subheader="Admin: Configure shift formats and settings for all facilities"
+          />
+          <CardContent>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+            
+            {success && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {success}
+              </Alert>
+            )}
+
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              Manage shift format settings for each facility. This determines whether facilities use 2-shift (Day/NOC) or 3-shift (Day/Swing/NOC) scheduling.
+            </Typography>
+
+            {facilities.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="h6" color="text.secondary">
+                  No facilities found
+                </Typography>
+              </Box>
+            ) : (
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Facility Name</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Location</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Current Shift Format</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {facilities.map((facility) => (
+                      <FacilityShiftFormatRow 
+                        key={facility.id} 
+                        facility={facility}
+                        onUpdate={() => {
+                          fetchFacilities();
+                          setSuccess('Shift format updated successfully');
+                          setTimeout(() => setSuccess(''), 3000);
+                        }}
+                        onError={(err) => {
+                          setError(err);
+                          setTimeout(() => setError(''), 5000);
+                        }}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </Box>
+  );
+};
+
+// Component for managing individual facility shift format
+const FacilityShiftFormatRow = ({ facility, onUpdate, onError }) => {
+  const [shiftFormat, setShiftFormat] = useState(facility.shift_format || '3_shift');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (shiftFormat === facility.shift_format) return; // No change
+    
+    setSaving(true);
+    try {
+      // Use PATCH for partial update (only send shift_format)
+      await axios.patch(`${API_BASE_URL}/api/facilities/${facility.id}/`, {
+        shift_format: shiftFormat
+      });
+      onUpdate();
+    } catch (err) {
+      console.error('Error updating shift format:', err);
+      console.error('Error response:', err.response?.data);
+      onError(err.response?.data?.detail || err.response?.data?.shift_format?.[0] || 'Failed to update shift format');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <TableRow>
+      <TableCell>
+        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+          {facility.name}
+        </Typography>
+        {facility.facility_type && (
+          <Typography variant="caption" color="text.secondary">
+            {facility.facility_type}
+          </Typography>
+        )}
+      </TableCell>
+      <TableCell>
+        <Typography variant="body2" color="text.secondary">
+          {facility.city && facility.state ? `${facility.city}, ${facility.state}` : facility.address || '-'}
+        </Typography>
+      </TableCell>
+      <TableCell>
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <Select
+            value={shiftFormat}
+            onChange={(e) => setShiftFormat(e.target.value)}
+            disabled={saving}
+          >
+            <MenuItem value="2_shift">2-Shift (Day/NOC - 12 hour shifts)</MenuItem>
+            <MenuItem value="3_shift">3-Shift (Day/Swing/NOC - 8 hour shifts)</MenuItem>
+          </Select>
+        </FormControl>
+      </TableCell>
+      <TableCell>
+        <Button
+          size="small"
+          variant="contained"
+          onClick={handleSave}
+          disabled={saving || shiftFormat === facility.shift_format}
+        >
+          {saving ? 'Saving...' : 'Save'}
+        </Button>
+      </TableCell>
+    </TableRow>
   );
 };
 

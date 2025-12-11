@@ -47,6 +47,8 @@ class PaycomDataParser:
                 parsed_data = self._parse_employee_dates(raw_data)
             elif paycom_file.file_type == 'employee_payees':
                 parsed_data = self._parse_employee_payees(raw_data)
+            elif paycom_file.file_type == 'rate_history':
+                parsed_data = self._parse_rate_history(raw_data)
             else:
                 logger.warning(f"Unknown file type: {paycom_file.file_type}")
                 parsed_data = []
@@ -179,6 +181,24 @@ class PaycomDataParser:
                 employee_data['city'] = row.get('City', '')
                 employee_data['state'] = row.get('State', '')
                 employee_data['zip_code'] = row.get('Zip', '')
+                
+                # Extract hourly rate from various possible column names
+                hourly_rate = None
+                for col_name in ['Hourly Rate', 'Pay Rate', 'Base Rate', 'Regular Rate', 'Rate', 'Hourly', 'Wage Rate']:
+                    rate_value = row.get(col_name, '')
+                    if rate_value:
+                        try:
+                            # Remove $ and commas, convert to Decimal
+                            rate_str = str(rate_value).replace('$', '').replace(',', '').strip()
+                            if rate_str:
+                                hourly_rate = self._parse_decimal(rate_str)
+                                if hourly_rate:
+                                    break
+                        except:
+                            pass
+                
+                if hourly_rate:
+                    employee_data['hourly_rate'] = hourly_rate
                 
                 if employee_data['employee_id']:
                     employees.append(self._finalize_employee(employee_data))
@@ -348,6 +368,24 @@ class PaycomDataParser:
                 employee_data['zip_code'] = row.get('Zipcode', '')
                 employee_data['country'] = row.get('Country Code', '')
                 
+                # Extract hourly rate from various possible column names
+                hourly_rate = None
+                for col_name in ['Hourly Rate', 'Pay Rate', 'Base Rate', 'Regular Rate', 'Rate', 'Hourly', 'Wage Rate']:
+                    rate_value = row.get(col_name, '')
+                    if rate_value:
+                        try:
+                            # Remove $ and commas, convert to Decimal
+                            rate_str = str(rate_value).replace('$', '').replace(',', '').strip()
+                            if rate_str:
+                                hourly_rate = self._parse_decimal(rate_str)
+                                if hourly_rate:
+                                    break
+                        except:
+                            pass
+                
+                if hourly_rate:
+                    employee_data['hourly_rate'] = hourly_rate
+                
                 if employee_data['employee_id']:
                     employees.append(self._finalize_employee(employee_data))
         else:
@@ -371,6 +409,132 @@ class PaycomDataParser:
             
             # Add the last employee if exists
             if current_employee:
+                employees.append(self._finalize_employee(current_employee))
+        
+        return employees
+    
+    def _parse_rate_history(self, raw_data) -> List[Dict[str, Any]]:
+        """Parse rate history data from CSV - updates hourly rates for existing employees"""
+        employees = []
+        # Dictionary to track most recent rate per employee by effective date
+        employee_rates = {}  # {employee_id: {date: rate}}
+        
+        if isinstance(raw_data, list) and len(raw_data) > 0 and isinstance(raw_data[0], dict):
+            # CSV data - process each row and collect all rates with dates
+            for row in raw_data:
+                # Extract employee ID - try various column names
+                employee_id = (
+                    row.get('EE Code', '') or 
+                    row.get('Employee ID', '') or 
+                    row.get('Employee Code', '') or
+                    row.get('EECode', '') or
+                    row.get('EmployeeID', '')
+                ).strip()
+                
+                if not employee_id:
+                    logger.warning(f"Rate history row missing employee ID: {row}")
+                    continue
+                
+                # Check Pay Type - only process hourly rates, skip salary
+                pay_type = row.get('Pay Type', '').strip()
+                if pay_type and pay_type.lower() not in ['hourly', 'h']:
+                    # Skip salary entries
+                    continue
+                
+                # Extract effective date
+                effective_date_str = row.get('Effective Date', '').strip()
+                effective_date = None
+                if effective_date_str:
+                    effective_date = self._parse_date(effective_date_str)
+                    if not effective_date:
+                        logger.warning(f"Could not parse effective date '{effective_date_str}' for employee {employee_id}")
+                
+                # Extract hourly rate from Amount column
+                hourly_rate = None
+                amount_value = row.get('Amount', '').strip()
+                if amount_value:
+                    try:
+                        # Remove $ and commas, convert to Decimal
+                        rate_str = str(amount_value).replace('$', '').replace(',', '').strip()
+                        if rate_str:
+                            hourly_rate = self._parse_decimal(rate_str)
+                            if hourly_rate and hourly_rate > 0:
+                                # Store rate with effective date
+                                if employee_id not in employee_rates:
+                                    employee_rates[employee_id] = {}
+                                
+                                # Use effective_date as key, or current date if not available
+                                date_key = effective_date if effective_date else timezone.now().date()
+                                employee_rates[employee_id][date_key] = hourly_rate
+                                logger.info(f"Found hourly rate for employee {employee_id}: ${hourly_rate} (effective: {date_key})")
+                    except Exception as e:
+                        logger.warning(f"Error parsing amount '{amount_value}' for employee {employee_id}: {e}")
+                        continue
+                
+                # Also try other rate column names as fallback
+                if not hourly_rate:
+                    rate_column_names = [
+                        'Hourly Rate', 'Pay Rate', 'Base Rate', 'Regular Rate', 
+                        'Rate', 'Hourly', 'Wage Rate', 'Current Rate', 'Effective Rate',
+                        'RateAmount', 'Rate Amount', 'PayRate', 'Pay_Rate'
+                    ]
+                    
+                    for col_name in rate_column_names:
+                        rate_value = row.get(col_name, '')
+                        if rate_value:
+                            try:
+                                rate_str = str(rate_value).replace('$', '').replace(',', '').strip()
+                                if rate_str:
+                                    hourly_rate = self._parse_decimal(rate_str)
+                                    if hourly_rate and hourly_rate > 0:
+                                        if employee_id not in employee_rates:
+                                            employee_rates[employee_id] = {}
+                                        date_key = effective_date if effective_date else timezone.now().date()
+                                        employee_rates[employee_id][date_key] = hourly_rate
+                                        logger.info(f"Found hourly rate for employee {employee_id}: ${hourly_rate} (effective: {date_key})")
+                                        break
+                            except Exception as e:
+                                logger.warning(f"Error parsing rate value '{rate_value}' for employee {employee_id}: {e}")
+                                continue
+            
+            # Now create employee records with the most recent rate (latest effective date)
+            for employee_id, rates_by_date in employee_rates.items():
+                employee_data = {'employee_id': employee_id}
+                
+                # Get the most recent rate (latest effective date)
+                if rates_by_date:
+                    latest_date = max(rates_by_date.keys())
+                    employee_data['hourly_rate'] = rates_by_date[latest_date]
+                    employee_data['effective_date'] = latest_date
+                    logger.info(f"Using most recent hourly rate for {employee_id}: ${employee_data['hourly_rate']} (effective: {latest_date})")
+                
+                employees.append(self._finalize_employee(employee_data))
+        else:
+            # Fallback to old parsing logic for non-CSV data
+            logger.warning("Rate history file is not in CSV format, attempting fallback parsing")
+            current_employee = {}
+            for line in raw_data:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Look for employee ID patterns
+                if re.match(r'^\d+$', line) and len(line) >= 3:
+                    if current_employee and current_employee.get('employee_id'):
+                        employees.append(self._finalize_employee(current_employee))
+                    current_employee = {'employee_id': line}
+                
+                # Look for rate patterns
+                money_pattern = r'\$?[\d,]+\.?\d*'
+                if re.search(money_pattern, line):
+                    amount = self._parse_decimal(line)
+                    if amount is not None and amount > 0:
+                        if current_employee:
+                            if 'rate' in line.lower() or 'hourly' in line.lower():
+                                current_employee['hourly_rate'] = amount
+            
+            # Add the last employee if exists
+            if current_employee and current_employee.get('employee_id'):
                 employees.append(self._finalize_employee(current_employee))
         
         return employees
@@ -430,20 +594,47 @@ class PaycomDataParser:
                 # Try to get existing employee
                 try:
                     employee = PaycomEmployee.objects.get(employee_id=employee_id)
+                    hourly_rate_updated = False
+                    
                     # Update existing employee
                     for field, value in employee_data.items():
                         if hasattr(employee, field) and value is not None:
-                            # Don't overwrite existing non-empty values with empty strings
-                            # This prevents employee_directory from overwriting position data from employee_dates
-                            current_value = getattr(employee, field)
-                            if isinstance(value, str) and value.strip() == '' and current_value and current_value.strip():
-                                # Skip updating if new value is empty but current value has data
-                                continue
-                            setattr(employee, field, value)
+                            # Special handling for hourly_rate - always update it from rate history
+                            if field == 'hourly_rate' and value:
+                                current_rate = getattr(employee, field)
+                                if current_rate != value:
+                                    hourly_rate_updated = True
+                                    logger.info(f"Updating hourly_rate for {employee_id}: ${current_rate} -> ${value}")
+                                setattr(employee, field, value)
+                            else:
+                                # Don't overwrite existing non-empty values with empty strings
+                                # This prevents employee_directory from overwriting position data from employee_dates
+                                current_value = getattr(employee, field)
+                                if isinstance(value, str) and value.strip() == '' and current_value and current_value.strip():
+                                    # Skip updating if new value is empty but current value has data
+                                    continue
+                                setattr(employee, field, value)
                     
                     employee.last_synced_at = timezone.now()
                     employee.save()
                     stats['updated'] += 1
+                    
+                    # If hourly_rate was updated and employee is linked to Staff, update Staff too
+                    if hourly_rate_updated and employee.hourly_rate and employee.staff:
+                        from scheduling.models import Staff
+                        employee.staff.hourly_rate = employee.hourly_rate
+                        employee.staff.save()
+                        logger.info(f"Updated Staff.hourly_rate for {employee_id}: ${employee.hourly_rate}")
+                    elif hourly_rate_updated and employee.hourly_rate:
+                        # Try to find and update Staff by employee_id if not linked
+                        from scheduling.models import Staff
+                        try:
+                            staff = Staff.objects.get(employee_id=employee_id)
+                            staff.hourly_rate = employee.hourly_rate
+                            staff.save()
+                            logger.info(f"Updated unlinked Staff.hourly_rate for {employee_id}: ${employee.hourly_rate}")
+                        except Staff.DoesNotExist:
+                            logger.debug(f"No Staff record found for {employee_id}, hourly_rate will be synced later")
                     
                 except PaycomEmployee.DoesNotExist:
                     # Create new employee

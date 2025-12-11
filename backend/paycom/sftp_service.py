@@ -493,6 +493,8 @@ class PaycomSFTPService:
             return 'employee_dates'
         elif 'employee_payees' in filename_lower:
             return 'employee_payees'
+        elif 'rate_history' in filename_lower or 'rate history' in filename_lower:
+            return 'rate_history'
         else:
             return 'unknown'
     

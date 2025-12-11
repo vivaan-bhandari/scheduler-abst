@@ -1,0 +1,294 @@
+"EE Code","Employee Name","Effective Date","Rate Type",Amount,"Pay Type","Pay Frequency","Processing Schedule","Default Regular Hours","Annual Amount","Employee Status","Employee Type","Department Code",Department,"Payroll Profile Code","Payroll Profile Description","Location Code","Location Description"
+0504,"PELAYO, SHANIECE",05/18/2023,"Rate 1",17.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"36,401.40",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0285,"JONES, TENNIA",06/02/2023,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0479,"WALLDEZ, VANESSA LEE",06/02/2023,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0113,"ALONSO, SUNSHINE",06/16/2023,"Rate 1",15.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"32,761.26",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0112,"ALONSO, KARINA",06/16/2023,"Rate 1",15.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"32,761.26",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0234,"TORRES, NICOLE",06/16/2023,"Rate 1",15.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"32,761.26",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0439,"SOTO, ANGELICA",07/16/2023,"Rate 1",17.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"36,401.40",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0190,"DONDIEGO, MARIA",07/26/2023,"Rate 1",21,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,681.68",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0505,"CELAYA, REINA",08/01/2023,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0476,"WABOL, ROEL",08/29/2023,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0502,"VILLALTA, ERIKA DEL CARMEN",10/16/2023,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0175,"DADO, ESTRELLITA",11/16/2023,"Rate 1",23,Hourly,Semi-Monthly,Semi-Monthly,86.67,"47,841.84",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0554,"GOMEZ-ZUNIGA, BLANCA AZUCENA",11/16/2023,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0367,"SORIANO, LAARNIE VALENCIA",11/21/2023,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0342,"PACHECO LOYA, ANTHONY",12/14/2023,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0325,"MONGAR, BIR M",12/15/2023,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0630,"RODRIGUEZ, JOVANNY",01/01/2024,"Rate 1",19.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"40,561.56",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0105,"AGUSTIN, MARY ROSE",01/01/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0309,"MARTINEZ, BEULAH",01/01/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0428,"SEGOVIA, ASHLEY G",01/01/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0363,"PEREZ, DIANE MARIE",01/01/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0343,"NEGRETE, DENA C",01/01/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0575,"CROCKETT, KENYA",01/01/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0537,"CONTRERAS, ADRIANA",01/01/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0572,"MATHIS CABALLERO, DEASHANAE",01/01/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0184,"DIAZ, MANDIE",01/01/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0427,"SEDANO, MARIA GUADALUPE",01/16/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0639,"ABED RABBO, ABDULLAH",01/30/2024,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0654,"G, JOHN P",01/30/2024,"Rate 1",25.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"53,562.06",T,W2,200,Dietary,12Z29,"MARKHAM HOUSE SL",04,Markham
+0664,"OLIVER, JOLINE Y",01/30/2024,"Rate 1",24.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"50,961.96",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0666,"OWENS, COURTNEY L",01/30/2024,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",T,W2,400,Facilities,12Z29,"MARKHAM HOUSE SL",04,Markham
+0668,"SCHACKMANN, ETHAN M",01/30/2024,"Rate 1",25,Hourly,Semi-Monthly,Semi-Monthly,86.67,"52,002.00",T,W2,400,Facilities,12Z29,"MARKHAM HOUSE SL",04,Markham
+0673,"VALENCIA, BERENICE",01/30/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,200,Dietary,12Z29,"MARKHAM HOUSE SL",04,Markham
+0649,"ESTEGHLALIAN, LEILY",02/06/2024,"Rate 1",50,Hourly,Semi-Monthly,Semi-Monthly,86.67,"104,004.00",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0618,"LEBLANC, SUMMER",02/15/2024,"Rate 1",21,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,681.68",T,W2,100,Administration,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0164,"COOK, KAYLIE",04/01/2024,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0615,"ACEVEDO, MIRNA",04/01/2024,"Rate 1",17.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"36,401.40",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0526,"MUNOZ, ELISABETH",04/01/2024,"Rate 1",18.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"38,481.48",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0278,"DEL HARO, GABRIELLA AURORA",04/01/2024,"Rate 1",16.25,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,801.30",T,W2,100,Administration,10A64,"BUENA VISTA AL LLC",,
+0515,"NELLON, TRINITY",04/01/2024,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0220,"GARCIA FLORES, CONSUELO",04/15/2024,"Rate 1",17.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"36,401.40",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0778,"MARTINEZ, AMANDA",05/16/2024,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0652,"GIDEON, DANA DORA K",07/01/2024,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0657,"KAIPAT, MIKI ANN TRINITY",07/01/2024,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0529,"CONTRERAS, JEFFRY E",07/17/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0370,"PISTE TORRES, MARIA C",07/29/2024,"Rate 1",18.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"38,481.48",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0266,"BELTRAN PISTE, LIZBETH R",07/31/2024,"Rate 1",19.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"40,561.56",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0550,"LARES, BRIANNA",08/01/2024,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0820,"QUEEN, TORAINIO",08/16/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0716,"LANDEROS PEREZ, KAREN",09/16/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0521,"JACKSON, MEGAN SHANICE",10/16/2024,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0318,"JOHNSON, OBADIAH JONATHAN",11/03/2024,"Rate 1",19.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"40,561.56",A,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0569,"CARDOZA, LESLIE",12/16/2024,"Rate 1",24,Hourly,Semi-Monthly,Semi-Monthly,86.67,"49,921.92",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0934,"ARAGON, DESTINY-DANIELLE",01/01/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0918,"CEASAR, KELLY BRIANA",01/01/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0935,"FISHER, ANASTASIA MONYA",01/01/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0884,"GOMEZ, LETICIA",01/01/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,16S99,"BCG MANAGEMENT LLC",01,"Buena Vista"
+0897,"GRANT, ANGELA MONET",01/01/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0941,"POTTER, BRIANNA RENE",01/01/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0919,"WILCOX, ANDREA CAY",01/01/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0907,"SILVA, STEPHANIE RUIZ",01/01/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0545,"URRUTIA, ANA",01/01/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,16S99,"BCG MANAGEMENT LLC",01,"Buena Vista"
+0240,"GUTIERREZ, JASON",01/01/2025,"Rate 1",17.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"36,921.42",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0814,"CHAVEZ, LAILANA",01/01/2025,"Rate 1",16.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,841.34",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0938,"DE LA CRUZ, SAVANNA BANDEE",01/01/2025,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,16S99,"BCG MANAGEMENT LLC",01,"Buena Vista"
+0307,"MANRIQUEZ, KATIE",02/01/2025,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0178,"HOLTZ, NORMA",02/18/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0924,"BLETHEN, PHYLLIS",03/01/2025,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0297,"LEWIS, VELENDA LOMBOY",03/12/2025,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",A,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0636,"LANDEROS PEREZ, LIZETH",03/15/2025,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0383,"RADFORD, RAVEN",04/12/2025,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0176,"HERNANDEZ, BRENDA GALLEGOS",05/23/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0786,"PAGE, BETHANY",06/25/2025,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+7057,"GONZALES, DEBORAH",07/01/2025,"Rate 1",21.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"44,721.72",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0898,"IBARRA, JENNIFER",07/11/2025,"Rate 1",16.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,841.34",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0590,"GOMEZ, ERMINDA",08/01/2025,"Rate 1",18.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"38,481.48",A,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0589,"HERNANDEZ, FAUSTINA",08/01/2025,"Rate 1",18.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"38,481.48",A,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0203,"EVANS, AUBREY",09/16/2025,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",A,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0948,"SMITH, SAGE O'RION",10/01/2025,"Rate 1",21.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"44,721.72",A,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1133,"MURRAY, ZACHERY L",10/22/2025,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0488,"ZAMORA, CHESTER PAUL SAMPANG",10/09/2023,Salary,2166.67,Salary,Semi-Monthly,Semi-Monthly,86.67,52000,T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0655,"HALLADAY, HEATHER C",01/30/2024,Salary,3124.34,Salary,Semi-Monthly,Semi-Monthly,86.67,"74,984.16",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0647,"EDWARDS, DWIGHT D",01/30/2024,Salary,4375,Salary,Semi-Monthly,Semi-Monthly,86.67,"105,000.00",T,W2,100,Administration,12Z29,"MARKHAM HOUSE SL",04,Markham
+1113,"ABDI, FARDOWSA",09/09/2025,"Rate 1",19.5,Hourly,Semi-Monthly,Semi-Monthly,40.00,"18,720.00",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0102,"ACERO, SONYA",04/01/2023,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+1134,"AHMED, ASMAA",10/27/2025,"Rate 1",19.5,Hourly,Semi-Monthly,Semi-Monthly,40.00,"18,720.00",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0831,"ALANSI, OSAMAH",07/22/2024,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0916,"ALARCON, SINDY",11/01/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+1050,"ALBERT, MICHAEL",06/13/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,40.00,"19,200.00",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0863,"ALLEN, THOMAS ZACHARY",08/27/2024,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0972,"ALVARADO, HEAVEN",02/21/2025,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0882,"ALVAREZ, SARAH",09/17/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0885,"ANWAR, ZARIAH",08/29/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+1018,"ARBALLO, CHRISTYONA",05/01/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,16S99,"BCG MANAGEMENT LLC",01,"Buena Vista"
+1044,"ATIPUT, JANET",06/03/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,24.00,"10,944.00",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+1008,"AYALA, STEPHANIE",04/06/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,16S99,"BCG MANAGEMENT LLC",01,"Buena Vista"
+1115,"BARNEY, KYLEEROSE",09/12/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,40.00,"18,240.00",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0851,"BARRAGAN, ERICK",08/14/2024,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0832,"BARRAGAN, MARISELA",07/22/2024,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0949,"BARRIENTOS, ALEXA ELIZABETH",01/03/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0961,"BAUTISTA SANTOS, JASMINE MARIE",01/25/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+1129,"BELTRAN, SOPHIA",10/09/2025,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",A,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0981,"BENNINGFIELD, KAYDEN LEEANN",03/01/2025,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0996,"BOORD, TAYLOR",03/31/2025,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0614,"BRITT, MICHELLE IRENE",11/21/2023,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0871,"BROWN, ADRIANNA LOUISE",08/27/2024,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0861,"BROWN, ANDREA DANIELLE",08/16/2024,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0978,"BROWN, JOSHLYN LEANN",02/26/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0952,"BURRIS, KAREN RENE",01/23/2025,"Rate 1",21,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,681.68",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0933,"BUTTLER, PATRICE ANN",12/03/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0145,"CABRALES, HECTOR",03/28/2023,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+1106,"CALDERA, ALEJANDRA",08/25/2025,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0151,"CANTU, OFELIA",04/04/2023,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0154,"CARLOS, CONCEPCION",02/02/2023,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+1085,"CATRON, MADISON",07/16/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0625,"CERNA, ELIANA",12/13/2023,"Rate 1",18.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"38,481.48",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+1072,"CERRITENO PALMENO, MAGDALENA",07/03/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,40.00,"19,200.00",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0990,"CERVANTES, HAZEL",03/21/2025,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0156,"CHACON, EVA MARIA",02/17/2022,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0993,"CHRISTOFFERSON, RACHEL ANNE",03/16/2025,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1020,"CLARK, NICOLE",05/01/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1083,"COLON, STEPHANIE",07/21/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+1066,"CORNEJO, HAZEL",07/01/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+1071,"COX, REINA",07/03/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,80.00,"39,360.00",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0736,"CUEN, MATTHEW",02/22/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0973,"DE LA CRUZ, BRAYLEEN GARCIA",02/09/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0793,"DE LA ROSA, ALIZE",05/24/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0872,"DE LA ROSA, MARIA",09/03/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+1014,"DE LA TORRE, DANNY",04/29/2025,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+1130,"DEES, SHYLINN",10/01/2025,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",A,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0722,"DELA CRUZ, PRESLYN",01/28/2024,"Rate 1",19.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"40,561.56",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0181,"DELGADO, BERNADETTE ANN",04/04/2023,"Rate 1",15.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"32,241.24",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+1082,"DELGADO, ELIAZA",07/21/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0182,"DELGADO DE VELASQUEZ, ISABEL SARAI",08/16/2021,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0727,"DIAZ-MENDOZA, EVELYN",02/15/2024,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0728,"DIAZ-MENDOZA, MARIA",02/15/2024,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0944,"DILLARD, PATRICIA",12/24/2024,"Rate 1",22,Hourly,Semi-Monthly,Semi-Monthly,86.67,"45,761.76",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0188,"DOMINGUEZ JIMENEZ, LORENA",03/12/2023,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",A,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0999,"DOPICH, KEMINTA",03/21/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0995,"DOPICH, TANIENTA",03/21/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+1007,"EDMONDSON, CASANDRA",04/09/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1003,"EDMONDSON, WANDA DARLENE",04/01/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1006,"ENLET, MELINDA",04/15/2025,"Rate 1",19.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"40,561.56",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0860,"ESTRADA, ANA",08/23/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0606,"FARLEY, LATOYA",11/09/2023,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0965,"FLORES, ANGELA MARTINEZ",02/13/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+1019,"FRANCO, VALERIE",05/05/2025,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,16S99,"BCG MANAGEMENT LLC",05,"Posada SL "
+1032,"GALLES, RANDY",05/12/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0912,"GAMA-PEREZ, ESTELA",10/28/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+1039,"GANAC, GEM",05/21/2025,"Rate 1",19.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"40,561.56",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0932,"GARCIA, ERIKA",12/03/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+1002,"GARCIA, SUSAN",04/07/2025,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0222,"GARTMAN, TANGIE",03/30/2023,"Rate 1",15.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"32,241.24",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0875,"GONZALEZ, FRANCISCA",08/23/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0927,"GONZALEZ, MARIA",11/20/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,16S99,"BCG MANAGEMENT LLC",05,"Posada SL "
+0783,"GONZALEZ, STEPHANIE",05/09/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0808,"GREEN, ETHAN",06/25/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,16S99,"BCG MANAGEMENT LLC",05,"Posada SL "
+0766,"GUARDIAN, MADDISON",04/11/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+1141,"HAJI MOHAMED, ALIYAH",11/05/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,40.00,"19,200.00",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+1099,"HAJI MOHAMED, TAHA",08/13/2025,"Rate 1",19.5,Hourly,Semi-Monthly,Semi-Monthly,40.00,"18,720.00",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0523,"HELMICH, TRISTAN WINTER",07/01/2023,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0956,"HELMS, SHANEKA DARSHELL",01/20/2025,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0889,"HENNESSY, KELLI",09/17/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0255,"HERNANDEZ, DARLENE",09/01/2022,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+1023,"HUIZAR, BRIANNA",05/01/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+001C,"HUNDLEY, JODI",10/30/2024,"Rate 1",21,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,681.68",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0807,"HUTCHINGS, AMANDA ELAINE",06/24/2024,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1004,"IKIUO, TAIRIN",04/08/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0867,"INFANTE, LILIA",09/02/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0998,"IPWAN, MARIA",04/01/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0270,"JAMARILLO, MERANDA",06/16/2020,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0816,"JIMENEZ, FAITH",07/09/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+1059,"JINNY, REJOICE",06/24/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,80.00,"38,400.00",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0281,"JOHNSON, CASSANDRA",11/15/2022,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0805,"JOHNSON, MEGAN ROSE",06/05/2024,"Rate 1",23,Hourly,Semi-Monthly,Semi-Monthly,86.67,"47,841.84",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0283,"JONES, JEWEL",04/10/2023,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1146,"KANEHAILUA, GRACE",11/14/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,40.00,"19,200.00",A,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0600,"KESSEL, MALIA LYNN",10/16/2023,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0825,"KHUMALO, NTOMBIFUTHI",07/16/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,16S99,"BCG MANAGEMENT LLC",05,"Posada SL "
+0931,"KINZINGER, SHELBY ROSEMARIE",11/25/2024,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1076,"LANG, BARBARA",07/08/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,40.00,"19,200.00",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0295,"LARIOS, KAREN",04/07/2023,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0765,"LEMUS, ZOILA E",03/15/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+1092,"LOEAK, KAREN",07/31/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,40.00,"18,240.00",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0453,"LOOMIS, JUSTIN PATRICK",09/12/2022,"Rate 1",24,Hourly,Semi-Monthly,Semi-Monthly,86.67,"49,921.92",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0962,"LOPEZ, RUBY",02/03/2025,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+1049,"LOPEZ, NELLY",06/12/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,80.00,"38,400.00",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0923,"LOQUELLANO, KAIANA",11/08/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0306,"MALLETT, BREE",03/11/2023,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0947,"MANLEY, RILEY JEAN",01/01/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0982,"MANN, LINDSIE",03/05/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0792,"MARTIR, BRIANA",05/15/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0313,"MATA, PAIGE TALAIA S",11/14/2021,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+1143,"MAYER, KATELYN",11/11/2025,"Rate 1",19.5,Hourly,Semi-Monthly,Semi-Monthly,40.00,"18,720.00",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0955,"MCDONALD, SUSAN LYNN",01/28/2025,"Rate 1",21,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,681.68",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0852,"MEDINA, CITLALY",08/14/2024,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0317,"MEDINA, YVETTE M",12/05/2022,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0954,"MEJIA, GLORIA",01/28/2025,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,16S99,"BCG MANAGEMENT LLC",05,"Posada SL "
+0909,"MELENDEZ, JAMIE",10/18/2024,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0321,"MESA, CHANTE",06/25/2019,"Rate 1",15.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"32,241.24",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0511,"MIKSCH, JORDAN C",06/13/2023,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1054,"MILLER, CHRISTINA",06/13/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",A,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0328,"MONTES GARCIA, MONIQUE",01/01/2023,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0497,"MORA, EDWARD",04/08/2023,"Rate 1",15.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"32,241.24",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0527,"MORENO, MARLENE",07/20/2023,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0334,"MOSQUEDE-RAMOS, CRISTIAN",08/27/2022,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+1093,"MULKEY, BRITTANY",08/07/2025,"Rate 1",18.5,Hourly,Semi-Monthly,Semi-Monthly,80.00,"35,520.00",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+1126,"MUNDS, JACOB",10/02/2025,"Rate 1",21,Hourly,Semi-Monthly,Semi-Monthly,80.00,"40,320.00",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+1078,"NAVARRO, ELISABEL",07/10/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+1090,"NAVARRO, MARIA",07/24/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0890,"NELSON, SKYLEIGH NICHOLE",09/23/2024,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1027,"NETH, NAWAR",05/08/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+1053,"NEWTON, KIERSTEN",06/09/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0967,"OCHOA GODINEZ, ALEXI",02/19/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0920,"OLIVER, ANBRA LANIECE",10/25/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0349,"OSORIO, BEATRIZ",12/04/2020,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+1145,"PALACIOS, EIDALIA",11/11/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,80.00,"38,400.00",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+1087,"PALMER, FAITH",07/16/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1062,"PALOMINO, JOSIE",06/29/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0152,"PARRENO, REYNALDA D",11/14/2020,"Rate 1",15,Hourly,Semi-Monthly,Semi-Monthly,86.67,"31,201.20",T,W2,100,Administration,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0902,"PAULO, MYONA",10/09/2024,"Rate 1",21,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,681.68",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0886,"PEREZ, DONNA",08/31/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+1101,"PETRUS, NORIKA",08/20/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,80.00,"38,400.00",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0368,"PICHNER, ASHLEY O RIAN",01/12/2023,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0592,"PICKETT, CHRISTINA LOUISE",10/09/2023,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",A,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1001,"POPE, NYJAI KRYSTAL",04/03/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,16S99,"BCG MANAGEMENT LLC",01,"Buena Vista"
+0977,"POWEL, KAMELAI",02/27/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0774,"PRADO, LUCELI",04/26/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0379,"PRIETO, DIANA M",06/19/2020,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0380,"PRUETT, STACY LYNN",10/26/2022,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0385,"RAMIREZ, JESSICA",03/28/2023,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0957,"RANGEL, ANGELICA GABRIELLA",01/29/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0507,"REYES, CARLA",05/16/2023,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0763,"REYES, ERICA GUADALUPE",03/27/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0828,"REYES, SOPHIA",07/19/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+1131,"REYES GONZALES, DANIELA",10/17/2025,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,80.00,"34,560.00",A,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0405,"RODRIGUEZ, IRENE",07/27/2022,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0929,"RODRIGUEZ, MARY ANN",11/19/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0824,"RODRIGUEZ, MILDRED GUADALUPE",07/10/2024,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0925,"RODRIGUEZ, YERLY",11/11/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+0770,"RODRIGUEZ AYALA, MARISOL G",04/05/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0914,"ROMOS, ROSELIN",10/30/2024,"Rate 1",21,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,681.68",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0936,"ROMOS, WINA",12/06/2024,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+1105,"ROSALES, MARIA",08/14/2025,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0975,"ROSENAUER, KAYLA SHERE",02/24/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+1034,"RUJKE, KRYSTAL",05/19/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0969,"RUSSELL, AUBREE JOYCE",02/18/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0411,"SALAZAR, BETHANY",01/06/2023,"Rate 1",15.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"32,241.24",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+1025,"SALAZAR, CRISTIAN",05/01/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",A,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0839,"SANCHEZ, MARY",07/16/2024,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+1128,"SANCHEZ, NATHALIE",10/06/2025,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+1075,"SANCHIZ, TAMAR",07/08/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,40.00,"19,200.00",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0601,"SANDELIN, AHLIVIA LEE ELEANOR",10/16/2023,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0419,"SANTOS, KRISTEN",01/20/2022,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",A,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1080,"SANTOYA, ARIANA",07/17/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,80.00,"38,400.00",A,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+1012,"SCHAFF, BRIANA",04/20/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"
+0423,"SCHULTZ, ADDISON P",09/20/2022,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",A,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0424,"SCOTT, FREDA",03/24/2023,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0609,"SCOTT RAMOS, BLANCA",11/10/2023,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",A,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+1139,"SEYMOUR, KAYLA",11/01/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0433,"SOLIZ, GENEVIEVE",09/19/2020,"Rate 1",15.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"32,241.24",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+1132,"SORIANO, SHERYL",10/22/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,40.00,"18,240.00",A,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+1117,"SOTO, LETICIA",09/03/2025,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0764,"SOZA, BRENDA DANIELA",04/04/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",A,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+1095,"SPINO, SARAH",08/01/2025,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0901,"STALLSWORTH, JUDY",10/02/2024,"Rate 1",21,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,681.68",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0800,"STEPINA, CADEN",06/03/2024,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+1056,"SUDA, LORETTA",06/20/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,40.00,"18,240.00",T,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0443,"TARTER, JULIA ASHLEY",02/19/2023,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0447,"TAYLOR, SATRINA",03/01/2016,"Rate 1",26.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"55,122.12",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0811,"THODY, SORAYA LIVIA",06/24/2024,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1138,"THOMPSON, CORRINA",11/01/2025,"Rate 1",21,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,681.68",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1086,"TORRES, LUIS",07/16/2025,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0874,"TORRES, PAULINE",09/06/2024,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+1052,"TOWN, ALEXIS",06/01/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0873,"URRUTIA PACHECO, REBECA",09/03/2024,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+0720,"VALENZUELA, BRIAHNA NICOLE",01/22/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0473,"VILLEGAS, MARICELA",02/03/2023,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A72,"POSADA SL LLC",,
+1124,"VOLL, ANGELISA",09/26/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,40.00,"19,200.00",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0475,"WABOL, ITA K",09/25/2022,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0474,"WABOL, JANICE FELICIANO",09/25/2022,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,86.67,"41,601.60",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0477,"WABOL, RAFAEL F",02/27/2023,"Rate 1",18,Hourly,Semi-Monthly,Semi-Monthly,86.67,"37,441.44",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+1103,"WATAK, LUMOMO",08/27/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,40.00,"18,240.00",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+1123,"WATAK, MONJO",09/26/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,40.00,"18,240.00",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+1046,"WATAK, NEBWIJ",06/09/2025,"Rate 1",19.5,Hourly,Semi-Monthly,Semi-Monthly,48.00,"22,464.00",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+1089,"WATAK, VICTORIA",07/22/2025,"Rate 1",20,Hourly,Semi-Monthly,Semi-Monthly,40.00,"19,200.00",A,W2,300,Nursing,12Z29,"MARKHAM HOUSE SL",04,Markham
+0879,"WELTON, BRIA",09/07/2024,"Rate 1",16,Hourly,Semi-Monthly,Semi-Monthly,86.67,"33,281.28",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",,
+0992,"WILCOCK, DOMINIC DRAVEN",03/20/2025,"Rate 1",20.75,Hourly,Semi-Monthly,Semi-Monthly,86.67,"43,161.66",A,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+1065,"WILKINS, RAEGAN",06/10/2025,"Rate 1",20.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"42,641.64",T,W2,300,Nursing,10A56,"ARBOR MC LLC ",03,"Arbor MC"
+0895,"ZAMBRANO, ADRIANA",09/30/2024,"Rate 1",19.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"40,561.56",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+0525,"ZANAZANIAN, CHRISTINA",07/11/2023,"Rate 1",17,Hourly,Semi-Monthly,Semi-Monthly,86.67,"35,361.36",T,W2,300,Nursing,10A72,"POSADA SL LLC",05,"Posada SL "
+1026,"ZIMBA, THAMBANILULU",05/07/2025,"Rate 1",19,Hourly,Semi-Monthly,Semi-Monthly,86.67,"39,521.52",T,W2,300,Nursing,10A58,"MURRAY HIGHLAND MC LLC",02,"Murray Highland"
+1000,"ZUNIGA, GRECIA GUERRERO",04/03/2025,"Rate 1",16.5,Hourly,Semi-Monthly,Semi-Monthly,86.67,"34,321.32",T,W2,300,Nursing,10A64,"BUENA VISTA AL LLC",01,"Buena Vista"

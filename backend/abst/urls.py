@@ -24,7 +24,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.common import no_append_slash
 from rest_framework.routers import DefaultRouter
-from adls.views import ADLViewSet, WeeklyADLEntryViewSet, WeeklyADLSummaryViewSet
+from adls.views import ADLViewSet, ADLQuestionViewSet, WeeklyADLEntryViewSet, WeeklyADLSummaryViewSet
 from residents.views import ResidentViewSet, FacilityViewSet, FacilitySectionViewSet
 from users.views import UserViewSet, FacilityAccessViewSet
 from scheduling.views import (
@@ -38,6 +38,7 @@ from paycom.views import (
 
 router = DefaultRouter()
 router.register(r'adls', ADLViewSet)
+router.register(r'adl-questions', ADLQuestionViewSet, basename='adl-questions')
 router.register(r'weekly-adls', WeeklyADLEntryViewSet)
 router.register(r'weekly-adl-summaries', WeeklyADLSummaryViewSet)
 router.register(r'residents', ResidentViewSet)
